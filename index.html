@@ -69,6 +69,17 @@ button{cursor:pointer}
 .num{font-family:var(--f-display);font-weight:700;font-variant-numeric:tabular-nums}
 .badge{--s:34px;width:var(--s);height:var(--s);border-radius:50%;display:grid;place-items:center;flex:none;background:var(--player);color:#fff;font-family:var(--f-display);font-weight:800;font-size:calc(var(--s)*.5);line-height:1}
 .badge.gk{background:var(--gk);color:#1b1500}
+.pos{display:inline-grid;place-items:center;min-width:22px;height:18px;padding:0 4px;border-radius:5px;font-size:11px;font-weight:800;vertical-align:1px;background:var(--surface-2);color:var(--muted)}
+.pos.pG{background:color-mix(in srgb,var(--gk) 35%,transparent);color:var(--fg)}
+.pos.pD{background:color-mix(in srgb,var(--player) 22%,transparent);color:var(--player)}
+.pos.pM{background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
+.pos.pA{background:color-mix(in srgb,var(--danger) 20%,transparent);color:var(--danger)}
+.toggle.wrap{flex-wrap:wrap}.toggle.wrap button{flex:1 1 40%}
+/* list pages scroll with the document (most reliable on iPhone) */
+.app.page{height:auto;min-height:100%}
+.app.page > .scroll{overflow:visible;flex:1 0 auto}
+.app.page > .top{position:sticky;top:0;z-index:5;background:var(--bg)}
+.app.page > .bar{position:sticky;bottom:0;z-index:5}
 .cardi{display:inline-block;width:9px;height:13px;border-radius:2px;vertical-align:-2px}
 .cardi.y{background:var(--gk)} .cardi.r{background:var(--danger)}
 .pill{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
@@ -120,7 +131,8 @@ button{cursor:pointer}
 /* fit-to-screen terrain tab */
 .scroll.fit{display:flex;flex-direction:column;overflow:hidden;padding-bottom:6px}
 .fit > *{flex:none}
-.fit > .pitch-wrap{flex:1 1 auto;min-height:150px}
+.fit > .pitch-wrap{flex:1 1 0;min-height:150px}
+.scroll.fit.talk{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
 .fit .pitch{height:100%}
 
 /* pitch */
@@ -217,7 +229,7 @@ pre.report{white-space:pre-wrap;background:var(--surface);border-radius:12px;pad
 .sw{width:18px;height:3px;border-radius:2px;display:inline-block;flex:none}
 .sw.run{background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)} .sw.pass{background:repeating-linear-gradient(90deg,#ffd34d 0 4px,transparent 4px 7px)} .sw.press{background:#ff6b62}
 .pitch svg.draw{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.opp{position:absolute;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:#d8443c;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);touch-action:none}
+.oppm{position:absolute;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:#d8443c;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);touch-action:none}
 .points{display:flex;flex-direction:column;gap:6px}
 .point{display:flex;gap:10px;align-items:center;background:var(--surface);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow)}
 .point .n{font-family:var(--f-display);font-weight:800;font-size:22px;color:var(--accent);line-height:1;min-width:16px}
@@ -244,7 +256,7 @@ pre.report{white-space:pre-wrap;background:var(--surface);border-radius:12px;pad
 .present .pitch.big .token{width:26cqw}
 .present .pitch.big .token .badge{--s:clamp(26px,12.5cqw,56px)}
 .present .pitch.big .token .tn{font-size:clamp(10px,3.6cqw,16px);max-width:26cqw;padding:1px 7px}
-.present .pitch.big .opp{width:clamp(18px,8.5cqw,38px);height:clamp(18px,8.5cqw,38px)}
+.present .pitch.big .oppm{width:clamp(18px,8.5cqw,38px);height:clamp(18px,8.5cqw,38px)}
 .present .legend{padding:8px max(16px,env(safe-area-inset-left,0px)) 0;font-size:15px}
 .ptext{padding-block:6px 24px}
 .ptext ol{margin:8px 0 0;padding-left:1.4em;display:flex;flex-direction:column;gap:12px;font-size:clamp(22px,6vw,30px);font-weight:700;line-height:1.25}
@@ -267,7 +279,11 @@ pre.report{white-space:pre-wrap;background:var(--surface);border-radius:12px;pad
   .v-both .ptext{flex:1;min-width:0;overflow-y:auto}
   .v-board .pitch.big{width:auto;aspect-ratio:.7;margin-inline:auto}
 }
-#tpitch{height:min(64vh,calc((100vw - 32px)/.7),760px)}
+.fit .toolbar{gap:5px;margin-bottom:6px}
+.fit .tool{padding:6px 10px;font-size:12.5px;min-height:34px}
+.talkbar{display:grid;grid-template-columns:1fr 1.3fr;gap:8px;margin-top:8px}
+.talkbar .btn{min-height:46px}
+.count{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:99px;background:var(--accent);color:var(--accent-fg);font-size:12px;font-weight:800;padding:0 5px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 <style>
@@ -321,6 +337,27 @@ const mins = sec => Math.floor(sec/60) + "'";
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const plural = (n, one, many) => n + " " + (n > 1 ? many : one);
 const curMatch = () => S.matches.find(m => m.id === ui.matchId);
+// Player positions: G gardien, D défenseur, M milieu, A attaquant. Strong foot: D droit, G gauche, 2 les deux.
+const POS = { G: "Gardien", D: "Défenseur", M: "Milieu", A: "Attaquant" };
+const FOOT = { D: "Pied droit", G: "Pied gauche", "2": "Deux pieds" };
+const posOf = s => s.pos || (S.players.find(p => p.id === s.id) || {}).pos || (s.isGK || s.gk ? "G" : "");
+const posChip = s => { const k = posOf(s); return k ? `<span class="pos p${k}">${k}</span>` : ""; };
+// Native iPhone features when running inside the installed app (no-ops in a browser).
+const NATIVE = () => (window.LeagueNative && window.LeagueNative.isNative ? window.LeagueNative : null);
+const haptic = kind => { try { NATIVE() && NATIVE().haptic(kind); } catch (e) {} };
+function syncSubAlerts(){
+  const N = NATIVE(); if (!N) return;
+  const m = curMatch(); const t = Date.now(); const out = [];
+  for (const mm of S.matches) {
+    if (!mm.runningSince) continue;
+    const limit = mm.subInterval * 60;
+    for (const s of mm.slots) if (s.onField && !s.isGK) {
+      const left = limit - stint(mm, s, t);
+      if (left > 1) out.push({ at: t + left * 1000, title: "Changement · vs " + mm.opponent, body: `#${s.number} ${s.name} joue depuis ${mm.subInterval}'` });
+    }
+  }
+  N.scheduleSubAlerts(out);
+}
 
 // ---------- persistence: local first, then the artifact's private store ----------
 let cloud = null, me = null, dirty = new Set(), flushTimer = null, syncState = "local";
@@ -391,13 +428,13 @@ const isTired = (m, s, t) => live(m) && !s.isGK && stint(m, s, t) >= m.subInterv
 const autoOn = m => m.autoShape !== false;
 const baseShape = m => m.baseFormation || m.formation;
 
-function commit(m){ m.updatedAt = Date.now(); persist("m:" + m.id); render(); }
+function commit(m){ m.updatedAt = Date.now(); persist("m:" + m.id); render(); syncSubAlerts(); }
 function log(m, kind, p, o){
   m.events.push({ id: uid(), kind, minute: curMinute(m), period: m.currentPeriod,
     pid: p ? p.id : null, pname: p ? p.name : null, oid: o ? o.id : null, oname: o ? o.name : null });
 }
 const Engine = {
-  start(m){ if (m.runningSince) return; if (m.status === "notStarted") log(m, "start"); m.runningSince = Date.now(); m.status = "running"; commit(m); },
+  start(m){ if (m.runningSince) return; if (m.status === "notStarted") { log(m, "start"); NATIVE() && NATIVE().askNotifications(); } m.runningSince = Date.now(); m.status = "running"; commit(m); },
   pause(m){ if (!m.runningSince) return; m.totalRunBefore = total(m); m.runningSince = null; m.status = "paused"; commit(m); },
   endPeriod(m){ if (m.runningSince) { m.totalRunBefore = total(m); m.runningSince = null; }
     log(m, "end"); m.status = m.currentPeriod >= m.periodCount ? "finished" : "interval"; if (m.status === "interval") ui.mtab = "talk"; commit(m); },
@@ -421,7 +458,8 @@ const Engine = {
     const field = m.slots.filter(s => s.onField);
     const gk = field.find(s => s.isGK);
     if (gk) { gk.x = GK[0]; gk.y = GK[1]; }
-    field.filter(s => s !== gk).sort((a, b) => a.y - b.y).forEach((s, n) => { if (f[n]) { s.x = f[n][0]; s.y = f[n][1]; } });
+    const rank = s => ({ A: 0, M: 1, D: 2 }[posOf(s)] ?? 1.5);
+    field.filter(s => s !== gk).sort((a, b) => (rank(a) - rank(b)) || (a.y - b.y)).forEach((s, n) => { if (f[n]) { s.x = f[n][0]; s.y = f[n][1]; } });
     m.formation = name;
   },
   card(m, red, id){
@@ -478,6 +516,7 @@ function flash(text){
   const f = document.createElement("div"); f.className = "flash"; f.innerHTML = `<div>${esc(text)}</div>`;
   document.body.appendChild(f); setTimeout(() => f.remove(), 3000);
   try { navigator.vibrate && navigator.vibrate([250, 120, 250]); } catch (e) {}
+  haptic("warning");
 }
 const alertKey = (m, s) => m.id + "|" + s.id + "|" + s.enteredAt;
 function seedAlerts(m){ const t = Date.now(); for (const s of m.slots) if (s.onField && isTired(m, s, t)) alerted.add(alertKey(m, s)); }
@@ -495,9 +534,13 @@ function checkAlerts(m, t){
 const app = $("#app");
 function render(){
   const m = curMatch();
+  app.className = m ? "app" : "app page";
+  if (m && window.scrollY) window.scrollTo(0, 0);
   app.innerHTML = m ? matchView(m) + (ui.present ? presentView(m) : "") : (ui.tab === "matches" ? matchesView() : squadView()) + tabBar();
   ui.lastKey = m ? dynKey(m) : "";
   sizeArrows();
+  const ts = $("#talkSheet"); if (ts && m) ts.innerHTML = talkSheetBody(m);
+  const tl = $("#tipsList"); if (tl && m) tl.innerHTML = tipsListHtml(m);
 }
 window.addEventListener("resize", () => { if (!ui.drag && !ui.drawing) sizeArrows(); });
 const ICON = {
@@ -518,14 +561,17 @@ function matchesView(){
     const d = new Date(m.date);
     const pill = m.status === "notStarted" ? `<span class="pill">À venir</span>` : m.status === "finished" ? `<span class="pill">Terminé</span>` : `<span class="pill live">En direct</span>`;
     const cls = m.status === "notStarted" ? "" : us > them ? " w" : us < them ? " l" : "";
-    return `<button class="mrow" data-act="open" data-id="${m.id}">
-      <div><div class="opp">vs ${esc(m.opponent)}</div><div class="note">${d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })} · ${d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · ${m.periodCount}×${m.periodMinutes}'</div></div>
+    const info = `<div><div class="opp">vs ${esc(m.opponent)}</div><div class="note">${d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })} · ${d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · ${m.periodCount}×${m.periodMinutes}'</div></div>`;
+    if (ui.manage) return `<div class="mrow">${info}<div class="right"><button class="btn danger" data-act="delMatch" data-id="${m.id}">Supprimer</button></div></div>`;
+    return `<button class="mrow" data-act="open" data-id="${m.id}">${info}
       <div class="right">${pill}${m.status === "notStarted" ? "" : `<div class="score${cls}">${us}–${them}</div>`}</div></button>`;
   }).join("");
-  return `<header class="top gut"><h1>Matchs</h1><button class="btn primary" data-act="newMatch">+ Nouveau match</button></header>
+  return `<header class="top gut"><h1>Matchs</h1>${ms.length ? `<button class="btn${ui.manage ? " primary" : ""}" data-act="manage">${ui.manage ? "Terminé" : "Gérer"}</button>` : ""}${ui.manage ? "" : `<button class="btn primary" data-act="newMatch">+ Nouveau</button>`}</header>
   <main class="scroll gut"><div class="stack">
+    ${ui.manage ? `<p class="note" style="margin:0">Supprimer un match retire aussi ses buts, passes, cartons et minutes des statistiques des joueurs.</p>` : ""}
     ${ms.length ? rows : `<div class="card empty"><b>Aucun match</b><span>${S.players.length ? "Créez votre prochain match : adversaire, titulaires et système." : "Commencez par ajouter vos joueurs dans l'onglet Effectif."}</span>
       <button class="btn primary" data-act="${S.players.length ? "newMatch" : "tab"}" data-v="squad">${S.players.length ? "+ Nouveau match" : "Aller à l'effectif"}</button></div>`}
+    ${ui.manage && ms.length > 1 ? `<button class="btn ghost" data-act="delAll" style="color:var(--danger)">Supprimer tous les matchs</button>` : ""}
     <div class="sync" id="sync">${syncLabel()}</div>
   </div></main>`;
 }
@@ -551,7 +597,7 @@ function squadView(){
     <div class="label">${plural(ps.length, "joueur", "joueurs")}</div>
     ${ps.length ? `<div class="list">${ps.map(p => { const st = stats(p.id); return `
       <button class="row" data-act="editPlayer" data-id="${p.id}">${badge(p.number, p.gk)}
-        <div class="grow"><div class="name">${esc(p.name)}${p.gk ? ` <span class="pill">Gardien</span>` : ""}</div>
+        <div class="grow"><div class="name">${esc(p.name)} ${posChip(p)}${p.foot ? ` <span class="note">${FOOT[p.foot] || ""}</span>` : ""}</div>
         <div class="meta">${plural(st.mp, "match", "matchs")} · ${plural(st.g, "but", "buts")} · ${st.a} passe${st.a > 1 ? "s" : ""} déc. · ${mins(st.sec)}</div></div>
         ${st.y ? `<span class="cardi y"></span>${st.y > 1 ? `<small>${st.y}</small>` : ""}` : ""}${st.r ? `<span class="cardi r"></span>` : ""}
       </button>`; }).join("")}</div>`
@@ -580,7 +626,7 @@ function matchView(m){
   else if (live(m)) ctrls = `<button class="btn${m.runningSince ? "" : " go"}" data-act="${m.runningSince ? "pause" : "start"}" aria-label="${m.runningSince ? "Pause" : "Reprendre"}">${m.runningSince ? "❚❚" : "▶ Reprendre"}</button>
       <button class="btn stop" data-act="endAsk">⚑ ${last ? "Fin du match" : "Fin période"}</button>`;
   else if (m.status === "interval") ctrls = `<button class="btn go" data-act="next">▶ Période ${m.currentPeriod + 1}</button>`;
-  const fit = ui.mtab === "pitch";
+  const fit = ui.mtab === "pitch" || ui.mtab === "talk";
   const panel = ui.mtab === "pitch" ? pitchPanel(m) : ui.mtab === "players" ? playersPanel(m) : ui.mtab === "talk" ? talkPanel(m) : eventsPanel(m);
   const dis = m.status === "notStarted" ? " disabled" : "";
   const tabs = [["pitch", "Terrain"], ["players", "Joueurs"], ["talk", "Causerie"], ["events", "Faits"]];
@@ -593,15 +639,15 @@ function matchView(m){
     <div class="clockrow"><div class="clockbox"><span class="clock" data-clock>${clock(displaySec(m))}</span><span class="added" data-added></span><span class="period">${periodLabel(m)}</span></div>
     ${ctrls ? `<div class="ctrls">${ctrls}</div>` : ""}</div>
   </section>
-  <main class="scroll gut${fit ? " fit" : ""}">
+  <main class="scroll gut${fit ? " fit" : ""}${ui.mtab === "talk" ? " talk" : ""}">
     <div class="seg" role="group">${tabs.map(([k, l]) => `<button data-act="mtab" data-v="${k}" aria-pressed="${ui.mtab === k}">${l}</button>`).join("")}</div>
     ${panel}
   </main>
-  <nav class="bar gut"><div class="actions">
+  ${ui.mtab === "talk" ? "" : `<nav class="bar gut"><div class="actions">
     <button class="act goal" data-act="goal"${dis}>But<small>buteur + passe</small></button>
     <button class="act conc" data-act="concede"${dis}>Encaissé<small>${esc(m.opponent)}</small></button>
     <button class="act card" data-act="cardSheet"${dis}>Carton<small>jaune / rouge</small></button>
-  </div></nav>`;
+  </div></nav>`}`;
 }
 
 const PITCH_SVG = `<svg class="lines" viewBox="0 0 70 100" preserveAspectRatio="none" aria-hidden="true">
@@ -613,19 +659,97 @@ const PITCH_SVG = `<svg class="lines" viewBox="0 0 70 100" preserveAspectRatio="
   <ellipse cx="35" cy="50" rx=".8" ry=".6" fill="var(--pitch-line)"/></svg>`;
 
 // One live tip at a time on the Terrain tab, most urgent first.
-function liveStrip(m){
-  const t = Date.now();
-  if (bannerOn(m)) return `<div class="strip shape"><span class="t">⚙︎ ${ui.banner.text}</span><button class="mini" data-act="undoShape">Annuler</button><button class="x" data-act="hideBanner" aria-label="Fermer">✕</button></div>`;
-  const sg = suggestion(m, t);
-  if (sg) return `<div class="strip rot"><span class="t">⇄ <b>Changement conseillé :</b> #${esc(sg.out.number)} ${esc(sg.out.name)} ➜ #${esc(sg.inn.number)} ${esc(sg.inn.name)}</span><button class="mini go" data-act="doSub" data-o="${sg.out.id}" data-i="${sg.inn.id}">Faire</button></div>`;
-  if (live(m) && !autoOn(m)) {
-    const f = targetShape(m), [us, them] = score(m);
-    if (f !== m.formation && us !== them) return `<div class="strip info"><span class="t">${us < them ? "Menés" : "Devant"} : essayez le <b>${f}</b> (${shapeWhy(us - them)})</span><button class="mini go" data-act="applyF" data-v="${f}">Appliquer</button></div>`;
-  }
-  const y = live(m) && m.events.find(e => e.kind === "yellow" && !ui.hidden[e.id] && m.slots.find(s => s.id === e.pid && s.onField));
-  if (y) return `<div class="strip info"><span class="t"><span class="cardi y"></span> <b>${esc(y.pname)}</b> a déjà un jaune : prudence dans les duels.</span><button class="x" data-act="hideTip" data-id="${y.id}" aria-label="Fermer">✕</button></div>`;
-  return "";
+// ---------- live coaching tips (Terrain tab) ----------
+// Each tip: { key, pr (priority), icon, html, btn: { label, attrs } }. Highest priority shows first.
+function freshest(m, t, exceptId, pos){
+  const b = m.slots.filter(s => !s.onField && !s.sentOff && s.id !== exceptId && !s.isGK).sort((a, c) => played(m, a, t) - played(m, c, t));
+  return (pos && b.find(s => posOf(s) === pos)) || b[0] || m.slots.find(s => !s.onField && !s.sentOff && s.id !== exceptId);
 }
+function liveTips(m){
+  const out = []; if (!live(m)) return out;
+  const t = Date.now(); const [us, them] = score(m);
+  const matchLen = m.periodCount * m.periodMinutes * 60;
+  const progress = displaySec(m, t) / matchLen;
+  const minute = curMinute(m);
+  const last = m.currentPeriod >= m.periodCount;
+  const periodLeft = m.periodMinutes * 60 - periodElapsed(m, t);
+  const on = m.slots.filter(s => s.onField), bench = m.slots.filter(s => !s.onField && !s.sentOff);
+  const reds = m.slots.filter(s => s.sentOff).length;
+  const longest = on.filter(s => !s.isGK).sort((a, b) => stint(m, b, t) - stint(m, a, t))[0];
+  const sub = (o, i, label) => ({ label: label || "Faire", attrs: `data-act="doSub" data-o="${o.id}" data-i="${i.id}"` });
+  const P = s => `#${esc(s.number)} <b>${esc(s.name)}</b>`;
+
+  // 1. No goalkeeper on the pitch
+  const gkBench = bench.find(s => s.isGK);
+  if (!on.some(s => s.isGK) && gkBench && longest) out.push({ key: "nogk", pr: 100, icon: "🧤", html: `Aucun gardien sur le terrain. Faites entrer ${P(gkBench)}.`, btn: sub(longest, gkBench, "Entrer") });
+  // 2. Playing short-handed by mistake
+  if (on.length < MAX_ON - reds && bench.length) out.push({ key: "short", pr: 95, icon: "⚠️", html: `Seulement ${on.length} joueurs sur le terrain.`, btn: { label: "Compléter", attrs: `data-act="benchTap" data-id="${freshest(m, t).id}"` } });
+  // 3. Rotation
+  const sg = suggestion(m, t);
+  if (sg) out.push({ key: "rot:" + sg.out.id + sg.inn.id, pr: 80, icon: "⇄", html: `<b>Changement conseillé :</b> #${esc(sg.out.number)} ${esc(sg.out.name)} ➜ #${esc(sg.inn.number)} ${esc(sg.inn.name)}${sg.same ? " (même poste)" : ""}`, btn: sub(sg.out, sg.inn) });
+  // 4. Booked player: risk of a red card
+  for (const e of m.events) if (e.kind === "yellow") {
+    const s = on.find(x => x.id === e.pid); const i = s && freshest(m, t, null, posOf(s));
+    if (s && i) out.push({ key: "booked:" + e.id, pr: 75, icon: `<span class="cardi y"></span>`, html: `${P(s)} est averti : prudence dans les duels, ou remplacez-le pour éviter le rouge.`, btn: sub(s, i, "Remplacer") });
+  }
+  // 5. Fair playing time
+  if (progress > 0.3 && bench.length) {
+    const avg = on.concat(bench).reduce((a, s) => a + played(m, s, t), 0) / (on.length + bench.length);
+    const low = bench.filter(s => played(m, s, t) < avg * 0.5).sort((a, b) => played(m, a, t) - played(m, b, t))[0];
+    if (low && longest && !(sg && sg.inn.id === low.id)) out.push({ key: "fair:" + low.id, pr: 70, icon: "⏱", html: `${P(low)} n'a joué que ${mins(played(m, low, t))} (moyenne ${mins(avg)}). Faites-le entrer pour ${esc(longest.name)}.`, btn: sub(longest, low, "Entrer") });
+  }
+  // 5b. Positional balance and position-based changes
+  const known = on.filter(s => posOf(s));
+  if (known.length >= 5 && !known.some(s => posOf(s) === "D")) {
+    const d = bench.find(s => posOf(s) === "D"), o = on.filter(s => posOf(s) === "A" || posOf(s) === "M").sort((a, b) => stint(m, b, t) - stint(m, a, t))[0];
+    out.push({ key: "nodef", pr: 85, icon: "🧱", html: `Aucun défenseur sur le terrain.${d ? ` Faites entrer ${P(d)}.` : ""}`, btn: d && o ? sub(o, d, "Entrer") : null });
+  }
+  if (us < them && progress > 0.4) {
+    const a = bench.filter(s => posOf(s) === "A").sort((x, y) => played(m, x, t) - played(m, y, t))[0];
+    const d = on.filter(s => posOf(s) === "D").sort((x, y) => stint(m, y, t) - stint(m, x, t))[0];
+    if (a && d && on.filter(s => posOf(s) === "D").length >= 2) out.push({ key: "attack:" + a.id + d.id, pr: 64, icon: "⚔️", html: `Menés : un attaquant de plus. ${P(a)} à la place du défenseur ${P(d)}.`, btn: sub(d, a, "Faire") });
+  }
+  if (us > them && last && periodLeft <= 600) {
+    const d = bench.filter(s => posOf(s) === "D").sort((x, y) => played(m, x, t) - played(m, y, t))[0];
+    const a = on.filter(s => posOf(s) === "A").sort((x, y) => stint(m, y, t) - stint(m, x, t))[0];
+    if (a && d) out.push({ key: "defend:" + a.id + d.id, pr: 63, icon: "🛡", html: `Devant en fin de match : un défenseur de plus. ${P(d)} à la place de l'attaquant ${P(a)}.`, btn: sub(a, d, "Faire") });
+  }
+  // 6. Final minutes
+  if (last && periodLeft <= 300 && periodLeft > -600) {
+    if (us > them) out.push({ key: "late", pr: 66, icon: "🛡", html: `Dernières minutes et devant : gardez le ballon, restez compacts, pas de risque.` });
+    else if (us < them) out.push({ key: "late", pr: 66, icon: "🔥", html: `Dernières minutes et menés : tout le monde monte, tirez dès que possible.`, btn: m.formation !== AUTO.down2 ? { label: AUTO.down2, attrs: `data-act="applyF" data-v="${AUTO.down2}"` } : null });
+    else out.push({ key: "late", pr: 66, icon: "⏳", html: `Dernières minutes à égalité : concentration derrière, une occasion peut suffire.` });
+  }
+  // 7. Conceding in a short spell
+  const recentOpp = m.events.filter(e => e.kind === "opp" && e.minute >= minute - 10).length;
+  if (recentOpp >= 2) out.push({ key: "storm:" + recentOpp + ":" + them, pr: 62, icon: "🌪", html: `${recentOpp} buts encaissés en 10' : resserrez les lignes et calmez le jeu (passes courtes).`, btn: m.formation !== AUTO.up ? { label: AUTO.up, attrs: `data-act="applyF" data-v="${AUTO.up}"` } : null });
+  // 8. Formation hint when Auto is off
+  if (!autoOn(m)) { const f = targetShape(m); if (f !== m.formation && us !== them) out.push({ key: "shape:" + f, pr: 58, icon: "⚙︎", html: `${us < them ? "Menés" : "Devant"} : essayez le <b>${f}</b> (${shapeWhy(us - them)}).`, btn: { label: "Appliquer", attrs: `data-act="applyF" data-v="${f}"` } }); }
+  // 9. Down to fewer players
+  if (reds) out.push({ key: "red", pr: 55, icon: `<span class="cardi r"></span>`, html: `En infériorité numérique : bloc bas, tout le monde défend, contres rapides.` });
+  // 10. Goal drought
+  const lastOur = Math.max(0, ...m.events.filter(e => e.kind === "goal").map(e => e.minute));
+  if (us <= them && minute - lastOur >= 12 && minute >= 12) out.push({ key: "dry:" + Math.floor(minute / 12), pr: 45, icon: "🎯", html: `Pas de but depuis ${minute - lastOur}' : plus d'appels en profondeur, tirez plus tôt.${bench.length ? " Un attaquant frais peut aider." : ""}` });
+  // 11. Hot scorer
+  const goals = {}; m.events.filter(e => e.kind === "goal" && e.pid).forEach(e => goals[e.pid] = (goals[e.pid] || 0) + 1);
+  for (const [id, n] of Object.entries(goals)) { const s = on.find(x => x.id === id); if (s && n >= 2) out.push({ key: "hot:" + id + n, pr: 40, icon: "⭐", html: `${P(s)} a marqué ${n} buts : cherchez-le dans la profondeur.` }); }
+  // 12. Break coming
+  if (!last && periodLeft <= 120 && periodLeft > -300) out.push({ key: "ht:" + m.currentPeriod, pr: 35, icon: "📋", html: `Pause dans ${Math.max(0, Math.ceil(periodLeft / 60))}' : préparez la causerie.`, btn: { label: "Causerie", attrs: `data-act="mtab" data-v="talk"` } });
+  return out.filter(x => !ui.hidden[x.key]).sort((a, b) => b.pr - a.pr);
+}
+function tipRow(x, cls){
+  return `<div class="${cls}"><span class="t">${x.icon} ${x.html}</span>${x.btn ? `<button class="mini go" ${x.btn.attrs}>${esc(x.btn.label)}</button>` : ""}<button class="x" data-act="hideTip" data-id="${esc(x.key)}" aria-label="Masquer">✕</button></div>`;
+}
+function liveStrip(m){
+  if (bannerOn(m)) return `<div class="strip shape"><span class="t">⚙︎ ${ui.banner.text}</span><button class="mini" data-act="undoShape">Annuler</button><button class="x" data-act="hideBanner" aria-label="Fermer">✕</button></div>`;
+  const all = liveTips(m); if (!all.length) return "";
+  const top = all[0];
+  const cls = top.pr >= 75 ? "strip rot" : "strip info";
+  const more = all.length > 1 ? `<button class="mini" data-act="tipsSheet">+${all.length - 1}</button>` : "";
+  return tipRow(top, cls).replace(/<\/div>$/, more + "</div>");
+}
+function tipsSheet(){ const m = curMatch(); if (!m) return; sheet("Conseils du match", `<div id="tipsList" class="points">${tipsListHtml(m)}</div>`); }
+function tipsListHtml(m){ const all = liveTips(m); return all.length ? all.map(x => tipRow(x, "tip")).join("") : `<p class="note" style="margin:0">Aucun conseil pour l'instant.</p>`; }
 
 function pitchPanel(m){
   const t = Date.now();
@@ -649,8 +773,10 @@ function suggestion(m, t){
   const on = m.slots.filter(s => s.onField && !s.isGK).sort((a, b) => stint(m, b, t) - stint(m, a, t));
   const tired = on.find(s => stint(m, s, t) >= m.subInterval * 60);
   const bench = m.slots.filter(s => !s.onField && !s.sentOff).sort((a, b) => played(m, a, t) - played(m, b, t));
-  const fresh = bench.find(s => !s.isGK) || bench[0];
-  return tired && fresh ? { out: tired, inn: fresh } : null;
+  if (!tired) return null;
+  const same = posOf(tired) && bench.find(s => !s.isGK && posOf(s) === posOf(tired));
+  const fresh = same || bench.find(s => !s.isGK) || bench[0];
+  return fresh ? { out: tired, inn: fresh, same: !!same } : null;
 }
 function playersPanel(m){
   const t = Date.now();
@@ -716,7 +842,7 @@ function arrowsSvg(arrows, temp, W = 70, H = 100, k = 1){
 }
 function boardInner(m, interactive){
   const t = T(m);
-  const opps = t.showOpps ? t.opps.map((o, i) => `<div class="opp"${interactive ? ` data-opp="${i}"` : ""} style="left:${o.x * 100}%;top:${o.y * 100}%"></div>`).join("") : "";
+  const opps = t.showOpps ? t.opps.map((o, i) => `<div class="oppm"${interactive ? ` data-opp="${i}"` : ""} style="left:${o.x * 100}%;top:${o.y * 100}%"></div>`).join("") : "";
   const toks = m.slots.filter(s => s.onField).map(s => `<div class="token${interactive ? "" : " still"}"${interactive ? ` data-token="${s.id}"` : ""} style="left:${s.x * 100}%;top:${s.y * 100}%">${badge(s.number, s.isGK)}<span class="tn">${esc(s.name)}</span></div>`).join("");
   return PITCH_SVG + arrowsSvg(t.arrows) + opps + toks;
 }
@@ -743,6 +869,18 @@ function tips(m){
   const on = m.slots.filter(s => s.onField && !s.isGK).sort((a, b) => stint(m, b, t) - stint(m, a, t));
   if (bench[0] && on[0]) out.push({ text: `Rotation : #${bench[0].number} ${bench[0].name} n'a joué que ${mins(played(m, bench[0], t))}. Il peut remplacer #${on[0].number} ${on[0].name} (${mins(stint(m, on[0], t))} sans pause).`, sub: [on[0].id, bench[0].id] });
   for (const e of m.events) if (e.kind === "yellow") { const s = m.slots.find(x => x.id === e.pid); if (s && s.onField) out.push({ text: `#${s.number} ${s.name} a un jaune : pas de tacle risqué.`, short: `${s.name} : prudence, déjà averti` }); }
+  { const on = m.slots.filter(s => s.onField), c = k => on.filter(s => posOf(s) === k).length;
+    if (on.some(s => posOf(s))) out.push({ text: `Sur le terrain : ${c("G")} G · ${c("D")} D · ${c("M")} M · ${c("A")} A.${c("D") === 0 ? " Aucun défenseur : à corriger." : c("A") === 0 ? " Aucun attaquant : qui se projette ?" : ""}`, short: c("D") === 0 ? "Un défenseur reste toujours derrière" : "Chacun garde son poste" }); }
+  if (started) {
+    const pool = m.slots.filter(s => !s.sentOff && !s.isGK).sort((a, b) => played(m, a, t) - played(m, b, t));
+    const low = pool.slice(0, 2).filter(s => played(m, s, t) < (pool.reduce((x, s) => x + played(m, s, t), 0) / Math.max(1, pool.length)) * 0.6);
+    if (low.length) out.push({ text: `Temps de jeu : ${low.map(s => `${s.name} (${mins(played(m, s, t))})`).join(" et ")} ont peu joué. Faites-les commencer la prochaine période.`, short: `${low.map(s => s.name).join(" et ")} commencent la période` });
+    const goals = {}; m.events.filter(e => e.kind === "goal" && e.pid).forEach(e => goals[e.pid] = (goals[e.pid] || 0) + 1);
+    const best = Object.entries(goals).sort((a, b) => b[1] - a[1])[0];
+    if (best && best[1] >= 2) { const s = m.slots.find(x => x.id === best[0]); if (s) out.push({ text: `${s.name} a marqué ${best[1]} buts : cherchez-le en profondeur, l'adversaire va le surveiller.`, short: `Chercher ${s.name} en profondeur` }); }
+    const oppByPeriod = m.events.filter(e => e.kind === "opp" && e.period === m.currentPeriod).length;
+    if (oppByPeriod >= 2) out.push({ text: `${oppByPeriod} buts encaissés dans cette période : les deux défenseurs restent derrière le ballon, le gardien parle.`, short: "Défenseurs toujours derrière le ballon" });
+  }
   if (!out.length) out.push({ text: "Avant le match : montrer à chacun sa position sur le terrain et une mission.", short: "Chacun connaît sa position et sa mission" });
   return out;
 }
@@ -760,7 +898,7 @@ async function askAI(m){
   const data = { team: S.teamName, opponent: m.opponent, format: "football à 7 (6 joueurs de champ + gardien)", score: `${us}-${them}`,
     period: `${m.currentPeriod} sur ${m.periodCount} (${m.periodMinutes} min chacune)`, status: m.status, formation: m.formation,
     events: m.events.filter(e => !["start", "end"].includes(e.kind)).map(e => `${e.minute}' ${e.kind}${e.pname ? " " + e.pname : ""}${e.oname ? " / " + e.oname : ""}`),
-    players: m.slots.map(s => `#${s.number} ${s.name}${s.isGK ? " (gardien)" : ""} : ${Math.round(played(m, s, t) / 60)} min jouées, ${s.onField ? "sur le terrain" : s.sentOff ? "expulsé" : "sur le banc"}`),
+    players: m.slots.map(s => `#${s.number} ${s.name} (${POS[posOf(s)] || "poste inconnu"}) : ${Math.round(played(m, s, t) / 60)} min jouées, ${s.onField ? "sur le terrain" : s.sentOff ? "expulsé" : "sur le banc"}`),
     consignesDejaDonnees: T(m).points, dejaProposees: prev };
   const prompt = `Tu aides un entraîneur de football amateur pendant la pause d'un match à 7.\nDonnées du match (JSON) : ${JSON.stringify(data)}\n\nDonne 4 consignes concrètes que l'entraîneur peut dire aux joueurs maintenant : tactique, déplacements, changements ou état d'esprit, en te basant sur ce match. Chacune en moins de 16 mots, en français simple, avec les prénoms des joueurs quand c'est utile, sans répéter ce qui est déjà listé. Réponds uniquement avec un tableau JSON de 4 chaînes.`;
   try {
@@ -772,24 +910,31 @@ async function askAI(m){
   }
   if (!ui.drag && !ui.drawing && curMatch() === m) render();
 }
+// Causerie tab: the board fills the screen; instructions and suggestions open in a sheet.
 function talkPanel(m){
   const t = T(m);
   const tools = [["move", "✋ Déplacer"], ["run", "Course"], ["pass", "Passe"], ["press", "Pressing"]];
-  return `<div class="stack" style="padding-top:0">
-    <div class="toolbar">${tools.map(([k, l]) => `<button class="tool" data-act="tool" data-v="${k}" aria-pressed="${ui.tool === k}">${k !== "move" ? `<i class="sw ${k}"></i>` : ""}${l}</button>`).join("")}</div>
-    <div class="toolbar"><button class="tool" data-act="undoArrow"${t.arrows.length ? "" : " disabled"}>↶ Annuler</button><button class="tool" data-act="clearArrows"${t.arrows.length ? "" : " disabled"}>Effacer les flèches</button><button class="tool" data-act="toggleOpps" aria-pressed="${!!t.showOpps}">● Adversaires</button></div>
+  return `<div class="toolbar">${tools.map(([k, l]) => `<button class="tool" data-act="tool" data-v="${k}" aria-pressed="${ui.tool === k}">${k !== "move" ? `<i class="sw ${k}"></i>` : ""}${l}</button>`).join("")}
+      <button class="tool" data-act="undoArrow" aria-label="Annuler la dernière flèche"${t.arrows.length ? "" : " disabled"}>↶</button>
+      <button class="tool" data-act="toggleOpps" aria-pressed="${!!t.showOpps}">● Adv.</button></div>
     <div class="pitch-wrap"><div class="pitch" id="tpitch" data-arrows>${boardInner(m, true)}</div></div>
-    <p class="note" style="margin:0">${ui.tool === "move" ? "Déplacez les joueurs" + (t.showOpps ? " et les adversaires" : "") + " pour montrer les positions. Choisissez Course, Passe ou Pressing pour dessiner des flèches." : `Glissez le doigt sur le terrain pour dessiner une flèche (${ARROW[ui.tool].label.toLowerCase()}).`}</p>
-    <button class="btn primary block" data-act="present">Montrer aux joueurs</button>
-    <div class="label">Consignes</div>
-    <div class="points">${t.points.map((p, i) => `<div class="point"><span class="n">${i + 1}</span><span class="t">${esc(p)}</span><button class="del" data-act="delPoint" data-i="${i}" aria-label="Retirer">✕</button></div>`).join("") || `<p class="note" style="margin:0">Ajoutez 2 à 4 consignes courtes. À la pause, les joueurs retiennent peu.</p>`}</div>
+    <div class="talkbar">
+      <button class="btn" data-act="talkSheet">Consignes ${t.points.length ? `<span class="count">${t.points.length}</span>` : ""}</button>
+      <button class="btn primary" data-act="present">Montrer aux joueurs</button>
+    </div>`;
+}
+function talkSheetBody(m){
+  const t = T(m);
+  return `<div class="points">${t.points.map((p, i) => `<div class="point"><span class="n">${i + 1}</span><span class="t">${esc(p)}</span><button class="del" data-act="delPoint" data-i="${i}" aria-label="Retirer">✕</button></div>`).join("") || `<p class="note" style="margin:0">Ajoutez 2 à 4 consignes courtes. À la pause, les joueurs retiennent peu.</p>`}</div>
     <div class="addrow"><input class="inp" id="pointIn" placeholder="ex. Sami reste haut pour le ballon long" maxlength="90" enterkeyhint="done"><button class="btn primary" data-act="addPoint">Ajouter</button></div>
     <div class="chips">${PRESETS.filter(p => !t.points.includes(p)).map(p => `<button class="chip" data-act="preset" data-v="${esc(p)}">+ ${esc(p)}</button>`).join("")}</div>
     <div class="label">Suggestions</div>
     <div class="points">${tips(m).map(tp => `<div class="tip"><span class="t">${esc(tp.text)}</span>${tp.formation ? `<button class="mini" data-act="applyF" data-v="${tp.formation}">Appliquer</button>` : ""}${tp.sub ? `<button class="mini" data-act="doSub" data-o="${tp.sub[0]}" data-i="${tp.sub[1]}">Changer</button>` : `<button class="mini" data-act="preset" data-v="${esc(tp.short || tp.text)}">+ Ajouter</button>`}</div>`).join("")}</div>
     <div id="aiBox">${aiHtml(m)}</div>
-  </div>`;
+    ${t.arrows.length ? `<button class="btn ghost" data-act="clearArrows" style="color:var(--danger)">Effacer toutes les flèches</button>` : ""}
+    <button class="btn primary block" data-act="presentFromSheet">Montrer aux joueurs</button>`;
 }
+function talkSheet(m){ sheet("Consignes", `<div id="talkSheet" style="display:flex;flex-direction:column;gap:10px">${talkSheetBody(m)}</div>`); }
 function presentView(m){
   const t = T(m); const [us, them] = score(m); const v = ui.pview || "both";
   const views = [["both", "Terrain + consignes"], ["board", "Terrain"], ["text", "Consignes"]];
@@ -812,7 +957,7 @@ function addPoint(m, text){
 
 // ---------- live tick ----------
 function dynKey(m){ const t = Date.now(); const sg = suggestion(m, t);
-  return m.slots.filter(s => isTired(m, s, t)).map(s => s.id).join() + "|" + (sg ? sg.out.id + sg.inn.id : "") + "|" + (bannerOn(m) ? 1 : 0); }
+  return m.slots.filter(s => isTired(m, s, t)).map(s => s.id).join() + "|" + (sg ? sg.out.id + sg.inn.id : "") + "|" + (bannerOn(m) ? 1 : 0) + "|" + (ui.mtab === "pitch" ? liveTips(m).map(x => x.key).join() : ""); }
 setInterval(() => {
   const m = curMatch(); if (!m) return;
   const t = Date.now();
@@ -853,15 +998,19 @@ const stepVal = (root, id) => +root.querySelector("#" + id).dataset.v;
 function playerSheet(p){
   sheet(p ? "Modifier le joueur" : "Nouveau joueur", `
     <label class="field"><span>Nom</span><input class="inp" id="pName" value="${esc(p?.name || "")}" maxlength="24" autocomplete="off"></label>
-    <div class="grid2"><div class="field"><span>Numéro</span>${stepper("pNum", p?.number ?? nextNumber(), 0, 99, 1, "")}</div>
-    <div class="field"><span>Poste</span><div class="toggle"><button type="button" id="pGk" aria-pressed="${!!p?.gk}">🧤 Gardien</button></div></div></div>
+    <div class="field"><span>Numéro</span>${stepper("pNum", p?.number ?? nextNumber(), 0, 99, 1, "")}</div>
+    <div class="field"><span>Poste</span><div class="toggle wrap" id="pPos">${Object.entries(POS).map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${(p?.pos || (p?.gk ? "G" : "")) === k}">${k === "G" ? "🧤 " : ""}${l}</button>`).join("")}</div></div>
+    <div class="field"><span>Pied fort</span><div class="toggle" id="pFoot">${Object.entries(FOOT).map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${p?.foot === k}">${l.replace("Pied ", "")}</button>`).join("")}</div></div>
     <button class="btn primary block" id="pSave">Enregistrer</button>
     ${p ? `<button class="btn ghost" id="pDel" style="color:var(--danger)">Retirer de l'effectif</button>` : ""}`, root => {
     wireSteppers(root);
-    const gk = $("#pGk", root); gk.onclick = () => gk.setAttribute("aria-pressed", gk.getAttribute("aria-pressed") !== "true");
+    const pick = id => $(id, root).addEventListener("click", e => { const b = e.target.closest("button[data-k]"); if (!b) return; const was = b.getAttribute("aria-pressed") === "true"; $(id, root).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", "false")); b.setAttribute("aria-pressed", String(!was)); });
+    pick("#pPos"); pick("#pFoot");
+    const val = id => ($(id, root).querySelector('button[aria-pressed="true"]') || {}).dataset?.k || "";
     $("#pSave", root).onclick = () => {
       const name = $("#pName", root).value.trim(); if (!name) { $("#pName", root).focus(); return; }
-      const data = { name, number: stepVal(root, "pNum"), gk: gk.getAttribute("aria-pressed") === "true" };
+      const pos = val("#pPos"), foot = val("#pFoot");
+      const data = { name, number: stepVal(root, "pNum"), pos, foot, gk: pos === "G" };
       if (p) Object.assign(p, data); else S.players.push({ id: uid(), ...data });
       squadChanged(); closeSheet();
     };
@@ -913,7 +1062,7 @@ function newMatchSheet(){
     <label class="field"><span>Système de base</span><select class="inp" id="nForm">${Object.keys(FORMATIONS).map(f => `<option>${f}</option>`).join("")}</select></label></div>
     <button type="button" class="switchrow" id="nAuto" aria-pressed="true"><span class="t"><b>Système automatique selon le score</b><span class="note">Menés de 1 : ${AUTO.down1} · menés de 2+ : ${AUTO.down2} · devant : ${AUTO.up} · égalité : système de base. Annulable à chaque fois.</span></span><span class="sw-ui"></span></button>
     <div class="label" id="nCount">Titulaires 0/7 · touchez pour changer</div>
-    <div class="list" id="nRoster">${ps.map(p => `<button type="button" class="row" data-pid="${p.id}">${badge(p.number, p.gk, 30)}<div class="grow name">${esc(p.name)}</div><span class="role bench">${ROLE_FR.bench}</span></button>`).join("")}</div>
+    <div class="list" id="nRoster">${ps.map(p => `<button type="button" class="row" data-pid="${p.id}">${badge(p.number, p.gk, 30)}<div class="grow name">${esc(p.name)} ${posChip(p)}</div><span class="role bench">${ROLE_FR.bench}</span></button>`).join("")}</div>
     <p class="note" style="margin:0">Chaque touche alterne Remplaçant → Titulaire → Absent.</p>
     <button class="btn primary block" id="nCreate">Créer le match</button>`, root => {
     wireSteppers(root);
@@ -926,13 +1075,14 @@ function newMatchSheet(){
       if (next === "starter" && count() >= MAX_ON) next = "absent";
       roles[id] = next;
       const tag = b.querySelector(".role"); tag.className = "role " + next; tag.textContent = ROLE_FR[next];
-      $("#nCount", root).textContent = `Titulaires ${count()}/7 · touchez pour changer`;
+      const st = ps.filter(p => roles[p.id] === "starter"), byPos = k => st.filter(p => (p.pos || (p.gk ? "G" : "")) === k).length;
+      $("#nCount", root).textContent = `Titulaires ${count()}/7` + (st.length ? ` · ${byPos("G")} G · ${byPos("D")} D · ${byPos("M")} M · ${byPos("A")} A` : " · touchez pour changer");
     });
     $("#nCreate", root).onclick = () => {
       const opp = $("#nOpp", root).value.trim(); if (!opp) { $("#nOpp", root).focus(); toast("Entrez le nom de l'adversaire"); return; }
       const slots = ps.filter(p => (roles[p.id] || "bench") !== "absent").map(p => {
         const st = roles[p.id] === "starter";
-        return { id: p.id, name: p.name, number: p.number, isGK: !!p.gk, onField: st, sentOff: false, banked: 0, enteredAt: st ? 0 : null, x: .5, y: .5 };
+        return { id: p.id, name: p.name, number: p.number, isGK: !!p.gk, pos: p.pos || (p.gk ? "G" : ""), foot: p.foot || "", onField: st, sentOff: false, banked: 0, enteredAt: st ? 0 : null, x: .5, y: .5 };
       });
       const form = $("#nForm", root).value;
       const m = { id: uid(), date: new Date($("#nDate", root).value || Date.now()).toISOString(), opponent: opp,
@@ -969,7 +1119,7 @@ function goalSheet(m){
     });
     $("#gSave", root).onclick = () => {
       const p = m.slots.find(s => s.id === scorer); if (!p) return;
-      log(m, "goal", p, m.slots.find(s => s.id === assist)); autoShape(m); closeSheet(); commit(m); toast(`⚽ But de ${p.name}`);
+      log(m, "goal", p, m.slots.find(s => s.id === assist)); autoShape(m); closeSheet(); commit(m); haptic("success"); toast(`⚽ But de ${p.name}`);
     };
   });
 }
@@ -1056,6 +1206,17 @@ function importSheet(){
     go.onclick = () => {
       let d; try { d = JSON.parse($("#impTxt", root).value); } catch (e) { toast("Ce texte n'est pas une sauvegarde valide"); return; }
       const data = d && d.app === "leagueit" ? d.data : null;
+      if (data && data.squadOnly && Array.isArray(data.players)) {
+        const norm = x => String(x).toLowerCase().replace(/\s+/g, " ").trim();
+        let up = 0, add = 0;
+        for (const np of data.players) {
+          const ex = S.players.find(p => norm(p.name) === norm(np.name));
+          if (ex) { Object.assign(ex, { number: np.number, pos: np.pos || ex.pos || "", foot: np.foot || ex.foot || "", gk: !!np.gk }); up++; }
+          else { S.players.push({ id: np.id || uid(), name: np.name, number: np.number, pos: np.pos || "", foot: np.foot || "", gk: !!np.gk }); add++; }
+        }
+        S.squadUpdatedAt = Date.now(); persist("squad"); closeSheet(); render();
+        toast(`Effectif mis à jour : ${up} modifié${up > 1 ? "s" : ""}, ${add} ajouté${add > 1 ? "s" : ""}. Matchs conservés.`); return;
+      }
       if (!data || !Array.isArray(data.players) || !Array.isArray(data.matches)) { toast("Ce texte n'est pas une sauvegarde League IT"); return; }
       if (!go.dataset.armed) { go.dataset.armed = 1; go.textContent = `Remplacer par ${plural(data.players.length, "joueur", "joueurs")} et ${plural(data.matches.length, "match", "matchs")} ?`; go.classList.add("danger"); return; }
       S.players = data.players; S.matches = data.matches; S.teamName = data.teamName || S.teamName; S.squadUpdatedAt = Date.now();
@@ -1072,14 +1233,15 @@ function confirmSheet(title, text, label, danger, fn){
 
 // ---------- events ----------
 function openMatch(id){ ui.matchId = id; ui.mtab = "pitch"; ui.selected = null; ui.banner = null; ui.present = false; const m = curMatch(); if (m) seedAlerts(m); render(); keepAwake(); }
-app.addEventListener("click", e => {
+document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const m = curMatch(); const a = b.dataset.act;
+  if (b.closest("#tipsList") && a !== "hideTip") closeSheet();
   switch (a) {
-    case "tab": ui.tab = b.dataset.v || "squad"; render(); break;
+    case "tab": ui.tab = b.dataset.v || "squad"; ui.manage = false; render(); break;
     case "newMatch": newMatchSheet(); break;
     case "open": openMatch(b.dataset.id); break;
-    case "back": ui.matchId = null; ui.selected = null; ui.present = false; render(); break;
+    case "back": ui.matchId = null; ui.selected = null; ui.present = false; render(); NATIVE() && NATIVE().keepAwake(false); break;
     case "editPlayer": playerSheet(S.players.find(p => p.id === b.dataset.id)); break;
     case "bulk": bulkSheet(); break;
     case "exportData": exportData(); break;
@@ -1096,7 +1258,7 @@ app.addEventListener("click", e => {
     case "endAsk": { const last = m.currentPeriod >= m.periodCount;
       confirmSheet(last ? "Fin du match ?" : "Fin de la période ?", last ? "Le chrono s'arrête et le match est terminé." : `Le chrono s'arrête. Vous lancerez la période ${m.currentPeriod + 1} quand vous serez prêt.`, last ? "Fin du match" : "Fin de la période", true, () => Engine.endPeriod(m)); break; }
     case "goal": goalSheet(m); break;
-    case "concede": confirmSheet(`But pour ${m.opponent} ?`, `Ajoute un but encaissé à la ${curMinute(m)}'.`, "Ajouter le but encaissé", true, () => { log(m, "opp"); autoShape(m); commit(m); }); break;
+    case "concede": confirmSheet(`But pour ${m.opponent} ?`, `Ajoute un but encaissé à la ${curMinute(m)}'.`, "Ajouter le but encaissé", true, () => { log(m, "opp"); autoShape(m); commit(m); haptic("warning"); }); break;
     case "cardSheet": cardSheet(m); break;
     case "report": reportSheet(m); break;
     case "benchTap":
@@ -1104,7 +1266,7 @@ app.addEventListener("click", e => {
       else if (onCount(m) < MAX_ON) Engine.bringOn(m, b.dataset.id);
       else toast("Touchez d'abord un joueur sur le terrain");
       break;
-    case "doSub": Engine.sub(m, b.dataset.o, b.dataset.i); toast("Changement effectué"); break;
+    case "doSub": Engine.sub(m, b.dataset.o, b.dataset.i); haptic("medium"); toast("Changement effectué"); break;
     case "subOff": subOffSheet(m, b.dataset.id); break;
     case "delEv": { if (!b.dataset.armed) { b.dataset.armed = 1; b.textContent = "Confirmer"; return; }
       m.events = m.events.filter(x => x.id !== b.dataset.id); autoShape(m); commit(m); break; }
@@ -1112,6 +1274,12 @@ app.addEventListener("click", e => {
     case "undoShape": undoShape(m); break;
     case "hideBanner": ui.banner = null; render(); break;
     case "hideTip": ui.hidden[b.dataset.id] = 1; render(); break;
+    case "tipsSheet": tipsSheet(); break;
+    case "manage": ui.manage = !ui.manage; render(); break;
+    case "delMatch": { if (!b.dataset.armed) { b.dataset.armed = 1; b.textContent = "Confirmer"; return; }
+      const id = b.dataset.id; S.matches = S.matches.filter(x => x.id !== id); S.deleted.push(id); persist("del:" + id); render(); toast("Match et statistiques supprimés"); break; }
+    case "delAll": { if (!b.dataset.armed) { b.dataset.armed = 1; b.textContent = `Touchez encore pour supprimer les ${S.matches.length} matchs`; return; }
+      S.matches.forEach(x => { S.deleted.push(x.id); persist("del:" + x.id); }); S.matches = []; ui.manage = false; render(); toast("Tous les matchs supprimés, statistiques remises à zéro"); break; }
     case "tool": ui.tool = b.dataset.v; render(); break;
     case "undoArrow": T(m).arrows.pop(); commit(m); break;
     case "clearArrows": if (!b.dataset.armed) { b.dataset.armed = 1; b.textContent = "Touchez pour confirmer"; return; } T(m).arrows = []; commit(m); break;
@@ -1122,11 +1290,13 @@ app.addEventListener("click", e => {
     case "applyF": { Engine.formation(m, b.dataset.v); const [us, them] = score(m); if (us === them) m.baseFormation = b.dataset.v; commit(m); toast("Système " + b.dataset.v); break; }
     case "askAI": askAI(m); break;
     case "present": ui.present = true; render(); keepAwake(); break;
+    case "talkSheet": talkSheet(m); break;
+    case "presentFromSheet": closeSheet(); ui.present = true; render(); keepAwake(); break;
     case "unpresent": ui.present = false; render(); break;
     case "pview": ui.pview = b.dataset.v; render(); break;
   }
 });
-app.addEventListener("keydown", e => {
+document.addEventListener("keydown", e => {
   if (e.target.id === "pointIn" && e.key === "Enter") { e.preventDefault(); const m = curMatch(); if (m) addPoint(m, e.target.value); }
 });
 app.addEventListener("change", e => {
@@ -1191,7 +1361,7 @@ app.addEventListener("pointercancel", () => { ui.drag = null; ui.drawing = null;
 
 // keep the screen on during a match
 let wake = null;
-async function keepAwake(){ try { if (navigator.wakeLock && !wake) { wake = await navigator.wakeLock.request("screen"); wake.addEventListener("release", () => wake = null); } } catch (e) {} }
+async function keepAwake(){ try { if (NATIVE()) { NATIVE().keepAwake(true); return; } if (navigator.wakeLock && !wake) { wake = await navigator.wakeLock.request("screen"); wake.addEventListener("release", () => wake = null); } } catch (e) {} }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && curMatch()) keepAwake(); });
 
 render();
