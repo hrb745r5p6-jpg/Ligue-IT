@@ -248,6 +248,28 @@ pre.report{white-space:pre-wrap;background:var(--surface);border-radius:12px;pad
 .pbig .pstep{font-size:clamp(18px,5vw,24px);color:var(--board-fg)}
 .pbig .pcount{color:var(--board-fg)}
 .pbig .icon-btn{background:var(--board-2);color:var(--board-fg)}
+/* preparation routines */
+.ricon{flex:none;width:58px;height:58px;border-radius:12px;display:grid;place-items:center;font-size:30px;background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
+.rblocks{display:flex;flex-direction:column;gap:8px}
+.rblock{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px}
+.rhead{display:flex;align-items:center;gap:10px}
+.rhead b{flex:1;font-family:var(--f-display);font-size:19px;text-transform:uppercase;letter-spacing:.01em}
+.rnum{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-fg);font-weight:800;font-size:14px;flex:none}
+.rmin{font-family:var(--f-display);font-weight:800;font-size:20px;color:var(--accent)}
+.rblock ul{margin:8px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;line-height:1.35}
+.rcue{margin:8px 0 0;font-size:13.5px;color:var(--muted);font-style:italic}
+.rtprog{height:6px;background:var(--board-2);flex:none}
+.rtprog i{display:block;height:100%;width:0;background:var(--led);transition:width .3s linear}
+.rtrun .pbody{gap:12px;padding-block:16px 24px}
+.rtstep{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
+.rtname{font-family:var(--f-display);font-weight:800;font-size:clamp(30px,9vw,44px);text-transform:uppercase;line-height:1.05;color:var(--board-fg)}
+.rtclock{font-family:var(--f-display);font-weight:800;font-size:clamp(72px,26vw,130px);line-height:1;color:var(--led);font-variant-numeric:tabular-nums;text-shadow:0 0 24px rgba(255,178,36,.35)}
+.rtitems{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px;font-size:clamp(17px,4.8vw,22px);font-weight:600;line-height:1.3}
+.rtcue{margin:0;font-style:italic;opacity:.8;font-size:16px}
+.rtnext{margin:0;opacity:.85;font-size:15px}
+.rtrun .icon-btn{background:var(--board-2);color:var(--board-fg)}
+.rtdone{align-items:center;justify-content:center;text-align:center;font-size:18px}
+.rtbig{font-family:var(--f-display);font-weight:800;font-size:56px;color:var(--led)}
 /* team talk */
 .toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .tool{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:7px 12px;font-weight:600;font-size:13px;display:inline-flex;gap:6px;align-items:center;min-height:36px}
@@ -563,7 +585,7 @@ function render(){
   const m = curMatch();
   app.className = m ? "app" : "app page";
   if (m && window.scrollY) window.scrollTo(0, 0);
-  app.innerHTML = m ? matchView(m) + (ui.present ? presentView(m) : "") : (ui.tab === "matches" ? matchesView() : ui.tab === "tactics" ? tacticsView() : squadView()) + (ui.playId && !m && ui.tab === "tactics" ? "" : tabBar()) + (ui.playBig && !m && ui.tab === "tactics" ? playBigView() : "");
+  app.innerHTML = m ? matchView(m) + (ui.present ? presentView(m) : "") : (ui.tab === "matches" ? matchesView() : ui.tab === "tactics" ? tacticsView() : squadView()) + ((ui.playId || ui.routineId) && !m && ui.tab === "tactics" ? "" : tabBar()) + (ui.playBig && !m && ui.tab === "tactics" ? playBigView() : "") + (ui.rt && !m && ui.tab === "tactics" ? runnerView() : "");
   ui.lastKey = m ? dynKey(m) : "";
   sizeArrows();
   const ts = $("#talkSheet"); if (ts && m) ts.innerHTML = talkSheetBody(m);
@@ -1187,13 +1209,16 @@ function takerHint(pl){
   return `<div class="label">Tireur conseillé</div><p class="pnote">${esc(pl.taker.why[0].toUpperCase() + pl.taker.why.slice(1))}.${fits.length ? ` Dans votre effectif : <b>${fits.slice(0, 3).map(p => esc(p.name)).join(", ")}</b>.` : ""}</p>`;
 }
 function tacticsView(){
+  const rr = ui.routineId && routineById(ui.routineId);
+  if (rr) return routineDetail(rr);
   const pl = ui.playId && playById(ui.playId);
   if (pl) return playDetail(pl);
   const cat = ui.playCat || "all";
   const list = PLAYS.filter(p => cat === "all" || p.cat === cat);
   return `<header class="top gut"><h1>Tactiques</h1></header>
   <main class="scroll gut"><div class="stack">
-    <div class="chips">${[["all", "Tout"], ...PLAY_CATS].map(([k, l]) => `<button class="chipbtn" data-act="playCat" data-v="${k}" aria-pressed="${cat === k}">${l}</button>`).join("")}</div>
+    <div class="chips">${[["all", "Tout"], ["prep", "Préparation"], ...PLAY_CATS].map(([k, l]) => `<button class="chipbtn" data-act="playCat" data-v="${k}" aria-pressed="${cat === k}">${l}</button>`).join("")}</div>
+    ${cat === "all" || cat === "prep" ? `<div class="label">Préparation</div>${routineCards()}` : ""}
     ${PLAY_CATS.filter(([k]) => cat === "all" || cat === k).map(([k, l]) => `
       <div class="label">${l}</div>
       <div class="plays">${list.filter(p => p.cat === k).map(p => `<button class="playcard" data-act="openPlay" data-id="${p.id}">
@@ -1259,6 +1284,119 @@ function playBigView(){
   return `<div class="present pbig" role="dialog" aria-label="${esc(pl.title)}"><div class="ph gut"><div class="sc">${esc(pl.title)}</div><button class="btn close" data-act="playBigClose">✕ Fermer</button></div>
     <div class="pbody"><div class="pdiag big v-${pl.view}" data-uid="b">${playSVG(pl, ui.playStep || 0, { uid: "b" })}</div>
     <div class="gut pctrl-wrap">${playControls(pl, ui.playStep || 0)}</div></div></div>`;
+}
+
+// ---------- Préparation: warm-ups and fitness session with a guided timer ----------
+const ROUTINES = [
+  { id: "echauffement", icon: "🔥", title: "Échauffement avant match", sub: "Toute l'équipe, à finir 5 à 10 min avant le coup d'envoi.",
+    blocks: [
+      { name: "Mise en route", min: 4, cue: "On monte doucement, on respire.", items: ["Footing léger en ligne, allers-retours sur 30 m", "Montées de genoux, talons-fesses", "Pas chassés, pas croisés", "Ouverture et fermeture de hanche en marchant"] },
+      { name: "Mobilité dynamique", min: 3, cue: "Pas d'étirements longs immobiles avant un match.", items: ["Fentes avant avec rotation du buste (×6 par jambe)", "Balancés de jambe avant-arrière et latéraux (×10)", "Squats lents (×10)", "Cercles de bras et rotations d'épaules"] },
+      { name: "Activation et prévention", min: 3, cue: "Réveiller les muscles qui protègent les genoux et les ischios.", items: ["Gainage planche 2 × 20 s", "Pont fessier (×10)", "Gainage latéral, genou au sol, 15 s par côté", "Petits sauts sur place (×20)"] },
+      { name: "Ballon par deux", min: 5, cue: "Toucher beaucoup de ballons, des deux pieds.", items: ["Passes courtes pied droit puis pied gauche (2')", "Contrôle orienté + passe (2')", "Têtes et volées en lançant à la main (1')"] },
+      { name: "Conservation 4 contre 2", min: 5, cue: "Deux touches maximum, on parle.", items: ["Carré de 12 × 12 m", "Les 2 défenseurs changent toutes les 45 s", "Le gardien s'échauffe à part (voir Échauffement gardien)"] },
+      { name: "Explosivité et frappes", min: 2, cue: "Vite, mais à 90 % : pas de blessure avant le match.", items: ["4 sprints de 10 à 15 m, retour en marchant", "2 départs au signal (réaction)", "3 frappes au but chacun"] }],
+    tips: ["Finir l'échauffement 5 à 10 minutes avant le coup d'envoi, pas plus : le corps refroidit vite.", "Boire quelques gorgées d'eau pendant l'échauffement, pas une bouteille entière.", "Garder un haut chaud sur le banc entre la fin de l'échauffement et le coup d'envoi.", "Les remplaçants refont 3 à 4 minutes d'activation avant d'entrer (routine « Remplaçant prêt à entrer »).", "Profiter du ballon par deux pour rappeler 1 ou 2 consignes simples, pas plus."] },
+  { id: "remplacant", icon: "⚡", title: "Remplaçant prêt à entrer", sub: "4 minutes au bord du terrain avant de rentrer.",
+    blocks: [
+      { name: "Trot et gammes", min: 1, cue: "Le long de la ligne de touche.", items: ["Trot léger", "Montées de genoux et talons-fesses"] },
+      { name: "Mobilité", min: 1, cue: "Hanches et ischios.", items: ["Fentes avant (×5 par jambe)", "Balancés de jambe (×8)"] },
+      { name: "Accélérations", min: 1, cue: "Monter progressivement.", items: ["3 accélérations sur 15 m à 70, 80 puis 90 %"] },
+      { name: "Prêt", min: 1, cue: "Regarder le match : qui je remplace, à quel poste ?", items: ["2 sprints courts de 5 m", "Petits sauts sur place", "Demander la consigne au coach"] }],
+    tips: ["Le coach prévient le remplaçant 4 à 5 minutes avant le changement.", "Un joueur froid se blesse plus : ne jamais entrer sans activation.", "Entrer en sachant son poste et une consigne précise."] },
+  { id: "gardien", icon: "🧤", title: "Échauffement gardien", sub: "15 minutes, avec un joueur ou un remplaçant qui frappe.",
+    blocks: [
+      { name: "Mise en route et mobilité", min: 3, cue: "Épaules, poignets, hanches.", items: ["Trot, pas chassés, pas croisés", "Rotations des épaules et des poignets", "Fentes latérales"] },
+      { name: "Prises de balle", min: 3, cue: "Les mains en W, bloquer le ballon.", items: ["Ballons au ventre", "Ballons au-dessus de la tête", "Ballons à ras de terre, une jambe pliée"] },
+      { name: "Plongeons progressifs", min: 4, cue: "Du sol vers debout, des deux côtés.", items: ["Assis : plongeons à droite et à gauche", "À genoux", "Debout, frappes de près à mi-hauteur"] },
+      { name: "Jeu au pied", min: 2, cue: "Relancer vite et juste.", items: ["Passes courtes aux deux pieds", "Dégagements et relances à la main"] },
+      { name: "Frappes réelles", min: 3, cue: "Les joueurs frappent depuis 12 à 16 m.", items: ["Frappes cadrées en rythme", "2 ou 3 centres à capter"] }],
+    tips: ["Le gardien commence en même temps que l'équipe, à part.", "Finir sur des arrêts réussis pour la confiance.", "Pas de frappes trop puissantes de trop près en début d'échauffement."] },
+  { id: "physique", icon: "💪", title: "Séance physique", sub: "60 minutes, une fois par semaine, pas la veille d'un match.",
+    blocks: [
+      { name: "Échauffement", min: 10, cue: "Progressif.", items: ["Footing 4'", "Mobilité dynamique 3' (fentes, balancés, squats)", "Gammes 3' : montées de genoux, talons-fesses, skipping, pas chassés"] },
+      { name: "Vitesse et agilité", min: 12, cue: "Qualité avant quantité : récupération complète.", items: ["Appuis rapides entre plots, 4 passages", "Slalom entre 6 plots, 4 passages", "4 sprints de 20 m, départs variés (assis, dos, au signal), 45 s de récupération", "Navette 5-10-5 (changements de direction), 4 fois"] },
+      { name: "Renforcement et prévention", min: 12, cue: "Circuit 2 tours : 40 s d'effort, 20 s de repos.", items: ["Squats", "Fentes alternées", "Pont fessier sur une jambe", "Gainage face", "Gainage latéral", "Ischios « Nordic » par deux, 5 répétitions lentes", "Adducteurs : gainage latéral Copenhague, genou au sol"] },
+      { name: "Endurance intermittente", min: 15, cue: "Courir vite, pas sprinter à fond.", items: ["Série 1 : 6' de 15 s de course rapide / 15 s de trot", "3' de récupération active", "Série 2 : 6' de 15 s / 15 s", "Variante avec ballon : 3 contre 3 sans gardien, 4 × 3' avec 1' de pause"] },
+      { name: "Jeu avec ballon", min: 8, cue: "Garder l'intensité avec le ballon.", items: ["Conservation 4 contre 4 + 2 jokers", "Deux touches maximum"] },
+      { name: "Retour au calme", min: 3, cue: "Faire redescendre le cœur.", items: ["Trot léger puis marche", "Étirements doux de 20 à 30 s : mollets, quadriceps, ischios, adducteurs", "Boire"] }],
+    tips: ["En début de saison, faire une seule série d'endurance et 1 tour du circuit.", "Laisser au moins 48 h entre cette séance et un match.", "Arrêter un exercice en cas de douleur : ce sont des conseils généraux, pas un avis médical.", "Après une journée au bureau, ne jamais raccourcir l'échauffement.", "Varier les binômes pour le travail Nordic : un joueur tient les chevilles."] },
+];
+const routineById = id => ROUTINES.find(r => r.id === id);
+const rtTotal = r => r.blocks.reduce((a, b) => a + b.min, 0);
+function routineCards(){
+  return `<div class="plays">${ROUTINES.map(r => `<button class="playcard" data-act="openRoutine" data-id="${r.id}">
+    <span class="ricon">${r.icon}</span>
+    <span class="pinfo"><b>${esc(r.title)}</b><span class="note">${esc(r.sub)}</span><span class="pill">${rtTotal(r)} min · ${r.blocks.length} blocs</span></span></button>`).join("")}</div>`;
+}
+function routineDetail(r){
+  return `<header class="top gut"><button class="icon-btn" data-act="closeRoutine" aria-label="Retour">‹</button>
+    <div style="flex:1;min-width:0"><div style="font-weight:700">${esc(r.title)}</div><div class="sub">${rtTotal(r)} minutes · ${r.blocks.length} blocs</div></div></header>
+  <main class="scroll gut"><div class="stack">
+    <p class="pnote">${esc(r.sub)}</p>
+    <button class="btn primary block" data-act="rtStart" data-id="${r.id}">▶ Démarrer le minuteur guidé</button>
+    <div class="rblocks">${r.blocks.map((b, i) => `<div class="rblock"><div class="rhead"><span class="rnum">${i + 1}</span><b>${esc(b.name)}</b><span class="rmin">${b.min}'</span></div>
+      <ul>${b.items.map(x => `<li>${esc(x)}</li>`).join("")}</ul><p class="rcue">${esc(b.cue)}</p></div>`).join("")}</div>
+    <div class="label">Astuces</div>
+    <ul class="pkeys">${r.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ul>
+  </div></main>`;
+}
+// Guided timer: one block at a time, beep + flash when the next block starts.
+function rtLeft(){ const rt = ui.rt; if (!rt) return 0; return rt.running ? Math.max(0, (rt.endsAt - Date.now()) / 1000) : rt.left; }
+function rtStart(id){
+  const r = routineById(id); if (!r) return;
+  ui.rt = { id, idx: 0, left: r.blocks[0].min * 60, running: true, endsAt: Date.now() + r.blocks[0].min * 60000 };
+  keepAwake(); render(); rtLoop();
+}
+function rtGoto(idx){
+  const rt = ui.rt, r = rt && routineById(rt.id); if (!r) return;
+  if (idx >= r.blocks.length) { rt.done = true; rt.running = false; rt.left = 0; beep(); haptic("success"); render(); return; }
+  rt.idx = Math.max(0, idx); rt.done = false; rt.left = r.blocks[rt.idx].min * 60;
+  if (rt.running) rt.endsAt = Date.now() + rt.left * 1000;
+  render();
+}
+function rtToggle(){
+  const rt = ui.rt; if (!rt) return;
+  if (rt.done) { rt.running = true; rt.done = false; rtGoto(0); return; }
+  if (rt.running) { rt.left = rtLeft(); rt.running = false; } else { rt.running = true; rt.endsAt = Date.now() + rt.left * 1000; }
+  render();
+}
+let rtTimer = null;
+function rtLoop(){
+  clearInterval(rtTimer);
+  rtTimer = setInterval(() => {
+    const rt = ui.rt; if (!rt) { clearInterval(rtTimer); return; }
+    const r = routineById(rt.id); const left = rtLeft();
+    const c = $("#rtClock"); if (c) c.textContent = clock(left);
+    const done = r.blocks.slice(0, rt.idx).reduce((a, b) => a + b.min * 60, 0) + (r.blocks[rt.idx] ? r.blocks[rt.idx].min * 60 - left : 0);
+    const bar = $("#rtBar"); if (bar) bar.style.width = Math.min(100, done / (rtTotal(r) * 60) * 100) + "%";
+    if (rt.running && left <= 0) {
+      const next = r.blocks[rt.idx + 1];
+      if (next) { beep(); haptic("warning"); flash(`Bloc suivant : ${next.name} (${next.min}')`); }
+      rtGoto(rt.idx + 1);
+    }
+  }, 250);
+}
+function runnerView(){
+  const rt = ui.rt, r = rt && routineById(rt.id); if (!r) return "";
+  const b = r.blocks[rt.idx], next = r.blocks[rt.idx + 1];
+  if (rt.done) return `<div class="present rtrun" role="dialog" aria-label="${esc(r.title)}"><div class="ph gut"><div class="sc">${esc(r.title)}</div><button class="btn close" data-act="rtClose">✕ Fermer</button></div>
+    <div class="pbody gut rtdone"><div class="rtbig">Terminé 💪</div><p>${r.id === "physique" ? "Bonne séance ! Pensez à boire et à bien récupérer." : "L'équipe est prête. Bon match !"}</p>
+    <button class="btn primary" data-act="rtToggle">↺ Recommencer</button></div></div>`;
+  return `<div class="present rtrun" role="dialog" aria-label="${esc(r.title)}">
+    <div class="ph gut"><div class="sc">${esc(r.title)}</div><button class="btn close" data-act="rtClose">✕ Fermer</button></div>
+    <div class="rtprog"><i id="rtBar"></i></div>
+    <div class="pbody gut">
+      <div class="rtstep">Bloc ${rt.idx + 1}/${r.blocks.length}</div>
+      <div class="rtname">${esc(b.name)}</div>
+      <div class="rtclock" id="rtClock">${clock(rtLeft())}</div>
+      <ul class="rtitems">${b.items.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      <p class="rtcue">${esc(b.cue)}</p>
+      ${next ? `<p class="rtnext">Ensuite : <b>${esc(next.name)}</b> (${next.min}')</p>` : `<p class="rtnext">Dernier bloc</p>`}
+      <div class="pctrl"><button class="icon-btn" data-act="rtPrev" aria-label="Bloc précédent"${rt.idx === 0 ? " disabled" : ""}>◀</button>
+        <button class="btn primary" data-act="rtToggle">${rt.running ? "❚❚ Pause" : "▶ Reprendre"}</button>
+        <button class="icon-btn" data-act="rtNext" aria-label="Bloc suivant">▶▶</button></div>
+    </div></div>`;
 }
 
 // ---------- live tick ----------
@@ -1544,8 +1682,15 @@ document.addEventListener("click", e => {
   const m = curMatch(); const a = b.dataset.act;
   if (b.closest("#tipsList") && a !== "hideTip") closeSheet();
   switch (a) {
-    case "tab": ui.tab = b.dataset.v || "squad"; ui.manage = false; ui.playId = null; ui.playBig = false; if (ui.playTimer) { clearInterval(ui.playTimer); ui.playTimer = null; } render(); window.scrollTo(0, 0); break;
+    case "tab": ui.tab = b.dataset.v || "squad"; ui.manage = false; ui.playId = null; ui.routineId = null; if (ui.rt) { ui.rt = null; clearInterval(rtTimer); } ui.playBig = false; if (ui.playTimer) { clearInterval(ui.playTimer); ui.playTimer = null; } render(); window.scrollTo(0, 0); break;
     case "playCat": ui.playCat = b.dataset.v; render(); break;
+    case "openRoutine": ui.routineId = b.dataset.id; render(); window.scrollTo(0, 0); break;
+    case "closeRoutine": ui.routineId = null; render(); break;
+    case "rtStart": rtStart(b.dataset.id); break;
+    case "rtToggle": rtToggle(); break;
+    case "rtPrev": rtGoto((ui.rt?.idx || 0) - 1); break;
+    case "rtNext": rtGoto((ui.rt?.idx || 0) + 1); break;
+    case "rtClose": ui.rt = null; clearInterval(rtTimer); render(); break;
     case "openPlay": ui.playId = b.dataset.id; ui.playStep = 0; render(); window.scrollTo(0, 0); break;
     case "closePlay": if (ui.playTimer) { clearInterval(ui.playTimer); ui.playTimer = null; } ui.playId = null; ui.playBig = false; render(); break;
     case "stepPrev": if (ui.playTimer) { clearInterval(ui.playTimer); ui.playTimer = null; } playGo((ui.playStep || 0) - 1); break;
