@@ -248,6 +248,28 @@ pre.report{white-space:pre-wrap;background:var(--surface);border-radius:12px;pad
 .pbig .pstep{font-size:clamp(18px,5vw,24px);color:var(--board-fg)}
 .pbig .pcount{color:var(--board-fg)}
 .pbig .icon-btn{background:var(--board-2);color:var(--board-fg)}
+/* exercise demos */
+.demos{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:10px}
+.demos.run{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));max-width:560px}
+.demo{margin:0;background:var(--surface-2);border-radius:12px;padding:4px 4px 6px;text-align:center}
+.demos.run .demo{background:var(--board-2)}
+.demo svg{width:100%;height:auto;display:block;aspect-ratio:1}
+.demo figcaption{font-size:11.5px;font-weight:600;color:var(--muted);line-height:1.2;margin-top:2px}
+.demos.run .demo figcaption{color:var(--board-fg);font-size:13px}
+.demo .ground{stroke:var(--line);stroke-width:.8}
+.demo .body,.demo .near,.demo .far{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.demo .body,.demo .near{stroke:var(--player);stroke-width:4}
+.demo .far{stroke:color-mix(in srgb,var(--player) 45%,var(--surface-2));stroke-width:3.6}
+.demo .head{fill:var(--player)}
+.demos.run .demo .body,.demos.run .demo .near{stroke:#7ea6ff}.demos.run .demo .head{fill:#7ea6ff}
+.demos.run .demo .far{stroke:#3f5f9e}
+.demos.run .demo .ground{stroke:#3a4a5c}
+.demo .ball{fill:#fff;stroke:#111;stroke-width:1}
+.demo .prop{fill:#c9a66b}
+.demo .plab{font-size:6px;fill:var(--muted);text-anchor:middle;font-weight:600}
+.demo .turf{fill:#2b8c43}.demo .tl{fill:none;stroke:rgba(255,255,255,.85);stroke-width:1}
+.demo .cone{fill:#ff8a1f}.demo .tme{fill:#2456c4;stroke:#fff;stroke-width:1}.demo .topp{fill:#d8443c;stroke:#fff;stroke-width:1}
+.demo.topv .plab{fill:#fff}
 /* preparation routines */
 .ricon{flex:none;width:58px;height:58px;border-radius:12px;display:grid;place-items:center;font-size:30px;background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
 .rblocks{display:flex;flex-direction:column;gap:8px}
@@ -1286,40 +1308,209 @@ function playBigView(){
     <div class="gut pctrl-wrap">${playControls(pl, ui.playStep || 0)}</div></div></div>`;
 }
 
+// ---------- Animated exercise demos (stick figure, side view; or top view for drills) ----------
+// Side view: figure faces right, ground at y=90. Pose: h hip, t torso lean (deg, + = forward),
+// lf/rf foot targets (knee via IK, kb bend: +1 forward), lw/rw hand targets (elbow via IK, eb).
+// Optional lk/rk explicit knees, ball [x,y]. "f" = near limb drawn on top, "r" = far limb.
+const L = { torso: 24, head: 9, thigh: 18, shin: 18, up: 13, fore: 12 };
+const STAND = { h: [50, 54], t: 0, lf: [51, 90], rf: [49, 90], lw: [52, 78], rw: [48, 78] };
+const P = o => Object.assign({}, STAND, o);
+const DEMOS = {
+  jog: { label: "Footing", dur: 650, frames: [
+    P({ h: [50, 53], t: 8, lf: [61, 86], rf: [38, 82], lw: [61, 44], rw: [42, 50] }),
+    P({ h: [50, 55], t: 8, lf: [38, 82], rf: [61, 86], lw: [42, 50], rw: [61, 44] })] },
+  knees: { label: "Montées de genoux", dur: 520, frames: [
+    P({ h: [50, 53], lf: [59, 70], rf: [50, 90], lw: [44, 50], rw: [60, 42] }),
+    P({ h: [50, 53], lf: [50, 90], rf: [59, 70], lw: [60, 42], rw: [44, 50] })] },
+  heels: { label: "Talons-fesses", dur: 520, frames: [
+    P({ lf: [40, 64], rf: [50, 90], lw: [55, 46], rw: [45, 48] }),
+    P({ lf: [50, 90], rf: [40, 64], lw: [45, 48], rw: [55, 46] })] },
+  shuffle: { label: "Pas chassés", dur: 1500, ping: true, frames: [
+    P({ h: [32, 55], lf: [42, 90], rf: [22, 90], lw: [44, 62], rw: [20, 62] }),
+    P({ h: [42, 50], lf: [45, 86], rf: [39, 86], lw: [50, 64], rw: [34, 64] }),
+    P({ h: [52, 55], lf: [62, 90], rf: [42, 90], lw: [64, 62], rw: [40, 62] }),
+    P({ h: [62, 50], lf: [65, 86], rf: [59, 86], lw: [70, 64], rw: [54, 64] }),
+    P({ h: [70, 55], lf: [80, 90], rf: [60, 90], lw: [82, 62], rw: [58, 62] })] },
+  lunge: { label: "Fentes avant", dur: 1400, ping: true, frames: [
+    P({ h: [46, 54], lf: [50, 90], rf: [42, 90], lw: [50, 64], rw: [44, 64] }),
+    P({ h: [46, 70], lf: [65, 90], rf: [24, 90], lw: [50, 72], rw: [44, 72] })] },
+  swing: { label: "Balancés de jambe", dur: 900, ping: true, frames: [
+    P({ lf: [33, 84], rf: [50, 90], lw: [64, 38], rw: [62, 40] }),
+    P({ lf: [74, 70], rf: [50, 90], lw: [40, 44], rw: [42, 46] })] },
+  squat: { label: "Squats", dur: 1600, ping: true, frames: [
+    P({ h: [48, 54], lf: [52, 90], rf: [50, 90], lw: [72, 34], rw: [72, 34] }),
+    P({ h: [42, 71], t: 32, lf: [53, 90], rf: [51, 90], lw: [78, 50], rw: [78, 50] })] },
+  plank: { label: "Gainage planche", dur: 1800, ping: true, frames: [
+    P({ h: [42, 74], t: 90, lf: [10, 90], rf: [12, 90], lw: [78, 90], rw: [76, 90] }),
+    P({ h: [42, 72.5], t: 90, lf: [10, 90], rf: [12, 90], lw: [78, 90], rw: [76, 90] })] },
+  bridge: { label: "Pont fessier", dur: 1600, ping: true, frames: [
+    P({ h: [50, 86], t: -95, lf: [70, 90], rf: [68, 90], lw: [46, 90], rw: [44, 90] }),
+    P({ h: [52, 73], t: -118, lf: [70, 90], rf: [68, 90], lw: [46, 90], rw: [44, 90] })] },
+  sidebridge: { label: "Pont fessier une jambe", dur: 1600, ping: true, frames: [
+    P({ h: [50, 86], t: -95, lf: [70, 90], rf: [80, 66], lw: [46, 90], rw: [44, 90] }),
+    P({ h: [52, 73], t: -118, lf: [70, 90], rf: [86, 58], lw: [46, 90], rw: [44, 90] })] },
+  sideplank: { label: "Gainage latéral", dur: 1700, ping: true, frames: [
+    P({ h: [38, 84], t: 74, lf: [10, 90], rf: [12, 89], lw: [74, 90], rw: [64, 50] }),
+    P({ h: [38, 79], t: 70, lf: [10, 90], rf: [12, 89], lw: [74, 90], rw: [64, 46] })] },
+  copenhague: { label: "Copenhague (adducteurs)", dur: 1700, ping: true, props: "bench", frames: [
+    P({ h: [40, 84], t: 78, lf: [14, 76], rf: [16, 77], lw: [76, 90], rw: [66, 52] }),
+    P({ h: [40, 79], t: 74, lf: [14, 76], rf: [16, 77], lw: [76, 90], rw: [66, 48] })] },
+  hops: { label: "Petits sauts", dur: 420, frames: [
+    P({ h: [50, 55], lf: [52, 90], rf: [48, 90], lw: [56, 66], rw: [44, 66] }),
+    P({ h: [50, 47], lf: [52, 83], rf: [48, 83], lw: [58, 60], rw: [42, 60] })] },
+  sprint: { label: "Sprint", dur: 420, frames: [
+    P({ h: [50, 52], t: 18, lf: [64, 80], rf: [32, 76], lw: [68, 40], rw: [40, 46] }),
+    P({ h: [50, 54], t: 18, lf: [32, 76], rf: [64, 80], lw: [40, 46], rw: [68, 40] })] },
+  shot: { label: "Frappe", dur: 1400, frames: [
+    P({ h: [46, 54], t: -6, lf: [30, 72], rf: [54, 90], lw: [30, 44], rw: [66, 40], ball: [64, 87] }),
+    P({ h: [50, 54], t: 4, lf: [64, 85], rf: [54, 90], lw: [34, 48], rw: [64, 44], ball: [64, 87] }),
+    P({ h: [52, 53], t: 10, lf: [76, 66], rf: [54, 90], lw: [36, 50], rw: [62, 46], ball: [98, 52] }),
+    P({ h: [50, 54], t: 0, lf: [56, 90], rf: [50, 90], lw: [52, 78], rw: [48, 78], ball: [64, 87] })] },
+  pass: { label: "Passes courtes", dur: 1800, frames: [
+    P({ h: [46, 54], lf: [38, 82], rf: [50, 90], ball: [92, 87] }),
+    P({ h: [46, 54], lf: [44, 86], rf: [50, 90], ball: [62, 87] }),
+    P({ h: [48, 54], lf: [64, 87], rf: [50, 90], ball: [62, 87] }),
+    P({ h: [48, 54], lf: [56, 89], rf: [50, 90], ball: [92, 87] })] },
+  catch: { label: "Prises de balle", dur: 1500, frames: [
+    P({ h: [48, 58], t: 8, lf: [56, 90], rf: [42, 90], lw: [66, 40], rw: [64, 42], ball: [98, 30] }),
+    P({ h: [48, 58], t: 8, lf: [56, 90], rf: [42, 90], lw: [66, 40], rw: [64, 42], ball: [70, 40] }),
+    P({ h: [48, 58], t: 4, lf: [56, 90], rf: [42, 90], lw: [58, 38], rw: [57, 40], ball: [61, 37] })] },
+  dive: { label: "Plongeon", dur: 1800, frames: [
+    P({ h: [42, 60], t: 12, lf: [52, 90], rf: [36, 90], lw: [60, 44], rw: [58, 46], ball: [92, 74] }),
+    P({ h: [50, 60], t: 70, lf: [30, 76], rf: [28, 80], lw: [84, 60], rw: [82, 63], ball: [88, 76] }),
+    P({ h: [52, 82], t: 92, lf: [22, 88], rf: [24, 90], lw: [86, 80], rw: [84, 82], ball: [86, 80] })] },
+  nordic: { label: "Ischios « Nordic »", dur: 2600, props: "partner", frames: [
+    { nordic: 0 }, { nordic: 48 }, { nordic: 56, fall: 1 }] },
+  quad: { label: "Étirement quadriceps", dur: 2000, ping: true, frames: [
+    P({ lf: [38, 64], rf: [50, 90], lw: [38, 64], rw: [62, 46] }),
+    P({ lf: [37, 62], rf: [50, 90], lw: [37, 62], rw: [62, 44] })] },
+  hamstring: { label: "Étirement ischios", dur: 2000, ping: true, frames: [
+    P({ h: [44, 60], t: 30, lf: [74, 89], rf: [42, 90], lw: [62, 68], rw: [60, 70] }),
+    P({ h: [42, 61], t: 44, lf: [74, 89], rf: [42, 90], lw: [66, 74], rw: [64, 76] })] },
+  // Top-view drills: dots on a mini pitch.
+  ladder: { label: "Échelle d'appuis", dur: 2400, top: "ladder", frames: [{ p: [[12, 50]] }, { p: [[88, 50]] }] },
+  slalom: { label: "Slalom entre plots", dur: 3000, top: "slalom", frames: [{ p: [[8, 50]] }, { p: [[22, 34]] }, { p: [[36, 66]] }, { p: [[50, 34]] }, { p: [[64, 66]] }, { p: [[78, 34]] }, { p: [[92, 50]] }] },
+  shuttle: { label: "Navette 5-10-5", dur: 3000, top: "shuttle", frames: [{ p: [[50, 50]] }, { p: [[80, 50]] }, { p: [[20, 50]] }, { p: [[50, 50]] }] },
+  rondo: { label: "Conservation", dur: 4000, top: "rondo", frames: [
+    { p: [[20, 20], [80, 20], [80, 80], [20, 80]], d: [[45, 45], [58, 55]], b: [20, 20] },
+    { p: [[20, 20], [80, 20], [80, 80], [20, 80]], d: [[52, 30], [60, 48]], b: [80, 20] },
+    { p: [[20, 20], [80, 20], [80, 80], [20, 80]], d: [[62, 52], [50, 62]], b: [80, 80] },
+    { p: [[20, 20], [80, 20], [80, 80], [20, 80]], d: [[45, 62], [38, 50]], b: [20, 80] },
+    { p: [[20, 20], [80, 20], [80, 80], [20, 80]], d: [[45, 45], [58, 55]], b: [20, 20] }] },
+};
+const lerp = (a, b, k) => a + (b - a) * k;
+const lerpP = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k)];
+function ik(A, T, l1, l2, bend){
+  let dx = T[0] - A[0], dy = T[1] - A[1], d = Math.hypot(dx, dy);
+  const dd = Math.min(Math.max(d, 1e-3), l1 + l2 - 1e-3);
+  const base = Math.atan2(dy, dx), off = Math.acos(Math.min(1, Math.max(-1, (l1 * l1 + dd * dd - l2 * l2) / (2 * l1 * dd))));
+  const ang = base - bend * off;
+  const M = [A[0] + l1 * Math.cos(ang), A[1] + l1 * Math.sin(ang)];
+  const E = [M[0] + l2 * Math.cos(Math.atan2(T[1] - M[1], T[0] - M[0])), M[1] + l2 * Math.sin(Math.atan2(T[1] - M[1], T[0] - M[0]))];
+  return [M, E];
+}
+function mixPose(a, b, k){
+  const o = {};
+  for (const key of Object.keys(a)) {
+    const va = a[key], vb = b[key] ?? va;
+    o[key] = Array.isArray(va) ? lerpP(va, vb, k) : typeof va === "number" ? lerp(va, vb ?? va, k) : va;
+  }
+  return o;
+}
+function nordicPose(f){
+  const a = f.nordic * Math.PI / 180, K = [40, 88], F = [18, 89];
+  const H = [K[0] + L.thigh * Math.sin(a), K[1] - L.thigh * Math.cos(a)];
+  const hands = f.fall ? [[72, 90], [70, 90]] : null;
+  return { h: H, t: f.nordic, lk: K, rk: [K[0] - 1, K[1]], lf: F, rf: [F[0] - 1, F[1]], lw: hands ? hands[0] : null, rw: hands ? hands[1] : null, chest: !hands };
+}
+function figureSVG(p, fg){
+  const t = (p.t || 0) * Math.PI / 180, H = p.h;
+  const S = [H[0] + L.torso * Math.sin(t), H[1] - L.torso * Math.cos(t)];
+  const Hd = [S[0] + L.head * Math.sin(t), S[1] - L.head * Math.cos(t)];
+  const leg = (foot, knee) => knee ? [knee, foot] : ik(H, foot, L.thigh, L.shin, p.kb ?? 1);
+  const arm = hand => ik(S, hand || [S[0] + 10 * Math.cos(t) + 2, S[1] + 10 * Math.sin(t) + 4], L.up, L.fore, p.eb ?? -1);
+  const [lk, lfo] = leg(p.lf, p.lk), [rk, rfo] = leg(p.rf, p.rk);
+  const [le, lwo] = arm(p.lw), [re, rwo] = arm(p.rw);
+  const seg = (pts, cls) => `<polyline class="${cls}" points="${pts.map(q => q[0].toFixed(1) + "," + q[1].toFixed(1)).join(" ")}"/>`;
+  return seg([S, re, rwo], "far") + seg([H, rk, rfo], "far") + seg([H, S], "body") + seg([H, lk, lfo], "near") + seg([S, le, lwo], "near")
+    + `<circle class="head" cx="${Hd[0].toFixed(1)}" cy="${Hd[1].toFixed(1)}" r="5.6"/>`;
+}
+function demoFrame(key, time){
+  const d = DEMOS[key]; if (!d) return "";
+  const n = d.frames.length;
+  let u = (time % d.dur) / d.dur;
+  let seg, k;
+  if (d.ping) { const v = u < .5 ? u * 2 : 2 - u * 2; const x = v * (n - 1); seg = Math.min(n - 2, Math.floor(x)); k = x - seg; }
+  else { const x = u * n; seg = Math.floor(x) % n; k = x - Math.floor(x); }
+  k = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // ease in-out
+  const A = d.frames[seg], B = d.frames[(seg + 1) % n];
+  if (d.top) return topFrame(d, A, B, k);
+  const pa = A.nordic !== undefined ? nordicPose(A) : A, pb = B.nordic !== undefined ? nordicPose(B) : B;
+  const pose = mixPose(pa, pb, A.nordic !== undefined && B.nordic === 0 ? 0 : k);
+  let props = "";
+  if (d.props === "bench") props = `<rect class="prop" x="2" y="76" width="22" height="14" rx="1.5"/>`;
+  if (d.props === "partner") props = `<rect class="prop" x="4" y="80" width="10" height="9" rx="2"/><text class="plab" x="2" y="76" style="text-anchor:start">partenaire</text>`;
+  const ball = pose.ball ? `<circle class="ball" cx="${pose.ball[0].toFixed(1)}" cy="${pose.ball[1].toFixed(1)}" r="3"/>` : "";
+  return `<line class="ground" x1="0" y1="90.8" x2="100" y2="90.8"/>${props}${figureSVG(pose)}${ball}`;
+}
+function topFrame(d, A, B, k){
+  let bg = "";
+  if (d.top === "ladder") bg = Array.from({ length: 8 }, (_, i) => `<line class="tl" x1="${12 + i * 11}" y1="38" x2="${12 + i * 11}" y2="62"/>`).join("") + `<line class="tl" x1="12" y1="38" x2="89" y2="38"/><line class="tl" x1="12" y1="62" x2="89" y2="62"/>`;
+  if (d.top === "slalom") bg = [22, 36, 50, 64, 78].map(x => `<path class="cone" d="M${x - 3} 53 L${x} 45 L${x + 3} 53 Z"/>`).join("");
+  if (d.top === "shuttle") bg = [20, 50, 80].map(x => `<path class="cone" d="M${x - 3} 60 L${x} 52 L${x + 3} 60 Z"/>`).join("") + `<text class="plab" x="35" y="72">5 m</text><text class="plab" x="65" y="72">5 m</text>`;
+  if (d.top === "rondo") bg = `<rect class="tl" x="12" y="12" width="76" height="76" rx="2"/>`;
+  const dots = (A.p || []).map((q, i) => { const r = lerpP(q, (B.p || A.p)[i], k); let y = r[1];
+    if (d.top === "ladder") { const steps = r[0] / 5.5; y = 50 + (Math.floor(steps) % 2 ? -5 : 5); }
+    return `<circle class="tme" cx="${r[0].toFixed(1)}" cy="${y.toFixed(1)}" r="4.5"/>`; }).join("");
+  const opp = (A.d || []).map((q, i) => { const r = lerpP(q, B.d[i], k); return `<circle class="topp" cx="${r[0].toFixed(1)}" cy="${r[1].toFixed(1)}" r="4.5"/>`; }).join("");
+  const ball = A.b ? (() => { const r = lerpP(A.b, B.b, k); return `<circle class="ball" cx="${r[0].toFixed(1)}" cy="${r[1].toFixed(1)}" r="2.6"/>`; })() : "";
+  return `<rect class="turf" x="0" y="0" width="100" height="100"/>${bg}${opp}${dots}${ball}`;
+}
+const demoTile = (key, big) => DEMOS[key] ? `<figure class="demo${big ? " big" : ""}${DEMOS[key].top ? " topv" : ""}"><svg viewBox="0 0 100 100" data-demo="${key}" aria-hidden="true">${demoFrame(key, 0)}</svg><figcaption>${esc(DEMOS[key].label)}</figcaption></figure>` : "";
+// One shared animation loop for every demo on screen (about 30 fps).
+let demoLast = 0;
+function demoLoop(ts){
+  requestAnimationFrame(demoLoop);
+  if (ts - demoLast < 33 || document.hidden) return; demoLast = ts;
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.querySelectorAll("svg[data-demo]").forEach(svg => { svg.innerHTML = demoFrame(svg.dataset.demo, ts); });
+}
+requestAnimationFrame(demoLoop);
+
 // ---------- Préparation: warm-ups and fitness session with a guided timer ----------
 const ROUTINES = [
   { id: "echauffement", icon: "🔥", title: "Échauffement avant match", sub: "Toute l'équipe, à finir 5 à 10 min avant le coup d'envoi.",
     blocks: [
-      { name: "Mise en route", min: 4, cue: "On monte doucement, on respire.", items: ["Footing léger en ligne, allers-retours sur 30 m", "Montées de genoux, talons-fesses", "Pas chassés, pas croisés", "Ouverture et fermeture de hanche en marchant"] },
-      { name: "Mobilité dynamique", min: 3, cue: "Pas d'étirements longs immobiles avant un match.", items: ["Fentes avant avec rotation du buste (×6 par jambe)", "Balancés de jambe avant-arrière et latéraux (×10)", "Squats lents (×10)", "Cercles de bras et rotations d'épaules"] },
-      { name: "Activation et prévention", min: 3, cue: "Réveiller les muscles qui protègent les genoux et les ischios.", items: ["Gainage planche 2 × 20 s", "Pont fessier (×10)", "Gainage latéral, genou au sol, 15 s par côté", "Petits sauts sur place (×20)"] },
-      { name: "Ballon par deux", min: 5, cue: "Toucher beaucoup de ballons, des deux pieds.", items: ["Passes courtes pied droit puis pied gauche (2')", "Contrôle orienté + passe (2')", "Têtes et volées en lançant à la main (1')"] },
-      { name: "Conservation 4 contre 2", min: 5, cue: "Deux touches maximum, on parle.", items: ["Carré de 12 × 12 m", "Les 2 défenseurs changent toutes les 45 s", "Le gardien s'échauffe à part (voir Échauffement gardien)"] },
-      { name: "Explosivité et frappes", min: 2, cue: "Vite, mais à 90 % : pas de blessure avant le match.", items: ["4 sprints de 10 à 15 m, retour en marchant", "2 départs au signal (réaction)", "3 frappes au but chacun"] }],
+      { name: "Mise en route", min: 4, demo: ["jog","knees","heels","shuffle"], cue: "On monte doucement, on respire.", items: ["Footing léger en ligne, allers-retours sur 30 m", "Montées de genoux, talons-fesses", "Pas chassés, pas croisés", "Ouverture et fermeture de hanche en marchant"] },
+      { name: "Mobilité dynamique", min: 3, demo: ["lunge","swing","squat"], cue: "Pas d'étirements longs immobiles avant un match.", items: ["Fentes avant avec rotation du buste (×6 par jambe)", "Balancés de jambe avant-arrière et latéraux (×10)", "Squats lents (×10)", "Cercles de bras et rotations d'épaules"] },
+      { name: "Activation et prévention", min: 3, demo: ["plank","bridge","sideplank","hops"], cue: "Réveiller les muscles qui protègent les genoux et les ischios.", items: ["Gainage planche 2 × 20 s", "Pont fessier (×10)", "Gainage latéral, genou au sol, 15 s par côté", "Petits sauts sur place (×20)"] },
+      { name: "Ballon par deux", min: 5, demo: ["pass"], cue: "Toucher beaucoup de ballons, des deux pieds.", items: ["Passes courtes pied droit puis pied gauche (2')", "Contrôle orienté + passe (2')", "Têtes et volées en lançant à la main (1')"] },
+      { name: "Conservation 4 contre 2", min: 5, demo: ["rondo"], cue: "Deux touches maximum, on parle.", items: ["Carré de 12 × 12 m", "Les 2 défenseurs changent toutes les 45 s", "Le gardien s'échauffe à part (voir Échauffement gardien)"] },
+      { name: "Explosivité et frappes", min: 2, demo: ["sprint","shot"], cue: "Vite, mais à 90 % : pas de blessure avant le match.", items: ["4 sprints de 10 à 15 m, retour en marchant", "2 départs au signal (réaction)", "3 frappes au but chacun"] }],
     tips: ["Finir l'échauffement 5 à 10 minutes avant le coup d'envoi, pas plus : le corps refroidit vite.", "Boire quelques gorgées d'eau pendant l'échauffement, pas une bouteille entière.", "Garder un haut chaud sur le banc entre la fin de l'échauffement et le coup d'envoi.", "Les remplaçants refont 3 à 4 minutes d'activation avant d'entrer (routine « Remplaçant prêt à entrer »).", "Profiter du ballon par deux pour rappeler 1 ou 2 consignes simples, pas plus."] },
   { id: "remplacant", icon: "⚡", title: "Remplaçant prêt à entrer", sub: "4 minutes au bord du terrain avant de rentrer.",
     blocks: [
-      { name: "Trot et gammes", min: 1, cue: "Le long de la ligne de touche.", items: ["Trot léger", "Montées de genoux et talons-fesses"] },
-      { name: "Mobilité", min: 1, cue: "Hanches et ischios.", items: ["Fentes avant (×5 par jambe)", "Balancés de jambe (×8)"] },
-      { name: "Accélérations", min: 1, cue: "Monter progressivement.", items: ["3 accélérations sur 15 m à 70, 80 puis 90 %"] },
-      { name: "Prêt", min: 1, cue: "Regarder le match : qui je remplace, à quel poste ?", items: ["2 sprints courts de 5 m", "Petits sauts sur place", "Demander la consigne au coach"] }],
+      { name: "Trot et gammes", min: 1, demo: ["jog","knees"], cue: "Le long de la ligne de touche.", items: ["Trot léger", "Montées de genoux et talons-fesses"] },
+      { name: "Mobilité", min: 1, demo: ["lunge","swing"], cue: "Hanches et ischios.", items: ["Fentes avant (×5 par jambe)", "Balancés de jambe (×8)"] },
+      { name: "Accélérations", min: 1, demo: ["sprint"], cue: "Monter progressivement.", items: ["3 accélérations sur 15 m à 70, 80 puis 90 %"] },
+      { name: "Prêt", min: 1, demo: ["sprint","hops"], cue: "Regarder le match : qui je remplace, à quel poste ?", items: ["2 sprints courts de 5 m", "Petits sauts sur place", "Demander la consigne au coach"] }],
     tips: ["Le coach prévient le remplaçant 4 à 5 minutes avant le changement.", "Un joueur froid se blesse plus : ne jamais entrer sans activation.", "Entrer en sachant son poste et une consigne précise."] },
   { id: "gardien", icon: "🧤", title: "Échauffement gardien", sub: "15 minutes, avec un joueur ou un remplaçant qui frappe.",
     blocks: [
-      { name: "Mise en route et mobilité", min: 3, cue: "Épaules, poignets, hanches.", items: ["Trot, pas chassés, pas croisés", "Rotations des épaules et des poignets", "Fentes latérales"] },
-      { name: "Prises de balle", min: 3, cue: "Les mains en W, bloquer le ballon.", items: ["Ballons au ventre", "Ballons au-dessus de la tête", "Ballons à ras de terre, une jambe pliée"] },
-      { name: "Plongeons progressifs", min: 4, cue: "Du sol vers debout, des deux côtés.", items: ["Assis : plongeons à droite et à gauche", "À genoux", "Debout, frappes de près à mi-hauteur"] },
-      { name: "Jeu au pied", min: 2, cue: "Relancer vite et juste.", items: ["Passes courtes aux deux pieds", "Dégagements et relances à la main"] },
-      { name: "Frappes réelles", min: 3, cue: "Les joueurs frappent depuis 12 à 16 m.", items: ["Frappes cadrées en rythme", "2 ou 3 centres à capter"] }],
+      { name: "Mise en route et mobilité", min: 3, demo: ["jog","shuffle"], cue: "Épaules, poignets, hanches.", items: ["Trot, pas chassés, pas croisés", "Rotations des épaules et des poignets", "Fentes latérales"] },
+      { name: "Prises de balle", min: 3, demo: ["catch"], cue: "Les mains en W, bloquer le ballon.", items: ["Ballons au ventre", "Ballons au-dessus de la tête", "Ballons à ras de terre, une jambe pliée"] },
+      { name: "Plongeons progressifs", min: 4, demo: ["dive"], cue: "Du sol vers debout, des deux côtés.", items: ["Assis : plongeons à droite et à gauche", "À genoux", "Debout, frappes de près à mi-hauteur"] },
+      { name: "Jeu au pied", min: 2, demo: ["pass"], cue: "Relancer vite et juste.", items: ["Passes courtes aux deux pieds", "Dégagements et relances à la main"] },
+      { name: "Frappes réelles", min: 3, demo: ["catch","dive"], cue: "Les joueurs frappent depuis 12 à 16 m.", items: ["Frappes cadrées en rythme", "2 ou 3 centres à capter"] }],
     tips: ["Le gardien commence en même temps que l'équipe, à part.", "Finir sur des arrêts réussis pour la confiance.", "Pas de frappes trop puissantes de trop près en début d'échauffement."] },
   { id: "physique", icon: "💪", title: "Séance physique", sub: "60 minutes, une fois par semaine, pas la veille d'un match.",
     blocks: [
-      { name: "Échauffement", min: 10, cue: "Progressif.", items: ["Footing 4'", "Mobilité dynamique 3' (fentes, balancés, squats)", "Gammes 3' : montées de genoux, talons-fesses, skipping, pas chassés"] },
-      { name: "Vitesse et agilité", min: 12, cue: "Qualité avant quantité : récupération complète.", items: ["Appuis rapides entre plots, 4 passages", "Slalom entre 6 plots, 4 passages", "4 sprints de 20 m, départs variés (assis, dos, au signal), 45 s de récupération", "Navette 5-10-5 (changements de direction), 4 fois"] },
-      { name: "Renforcement et prévention", min: 12, cue: "Circuit 2 tours : 40 s d'effort, 20 s de repos.", items: ["Squats", "Fentes alternées", "Pont fessier sur une jambe", "Gainage face", "Gainage latéral", "Ischios « Nordic » par deux, 5 répétitions lentes", "Adducteurs : gainage latéral Copenhague, genou au sol"] },
-      { name: "Endurance intermittente", min: 15, cue: "Courir vite, pas sprinter à fond.", items: ["Série 1 : 6' de 15 s de course rapide / 15 s de trot", "3' de récupération active", "Série 2 : 6' de 15 s / 15 s", "Variante avec ballon : 3 contre 3 sans gardien, 4 × 3' avec 1' de pause"] },
-      { name: "Jeu avec ballon", min: 8, cue: "Garder l'intensité avec le ballon.", items: ["Conservation 4 contre 4 + 2 jokers", "Deux touches maximum"] },
-      { name: "Retour au calme", min: 3, cue: "Faire redescendre le cœur.", items: ["Trot léger puis marche", "Étirements doux de 20 à 30 s : mollets, quadriceps, ischios, adducteurs", "Boire"] }],
+      { name: "Échauffement", min: 10, demo: ["jog","lunge","knees"], cue: "Progressif.", items: ["Footing 4'", "Mobilité dynamique 3' (fentes, balancés, squats)", "Gammes 3' : montées de genoux, talons-fesses, skipping, pas chassés"] },
+      { name: "Vitesse et agilité", min: 12, demo: ["ladder","slalom","sprint","shuttle"], cue: "Qualité avant quantité : récupération complète.", items: ["Appuis rapides entre plots, 4 passages", "Slalom entre 6 plots, 4 passages", "4 sprints de 20 m, départs variés (assis, dos, au signal), 45 s de récupération", "Navette 5-10-5 (changements de direction), 4 fois"] },
+      { name: "Renforcement et prévention", min: 12, demo: ["squat","lunge","sidebridge","plank","sideplank","nordic","copenhague"], cue: "Circuit 2 tours : 40 s d'effort, 20 s de repos.", items: ["Squats", "Fentes alternées", "Pont fessier sur une jambe", "Gainage face", "Gainage latéral", "Ischios « Nordic » par deux, 5 répétitions lentes", "Adducteurs : gainage latéral Copenhague, genou au sol"] },
+      { name: "Endurance intermittente", min: 15, demo: ["sprint","jog"], cue: "Courir vite, pas sprinter à fond.", items: ["Série 1 : 6' de 15 s de course rapide / 15 s de trot", "3' de récupération active", "Série 2 : 6' de 15 s / 15 s", "Variante avec ballon : 3 contre 3 sans gardien, 4 × 3' avec 1' de pause"] },
+      { name: "Jeu avec ballon", min: 8, demo: ["rondo"], cue: "Garder l'intensité avec le ballon.", items: ["Conservation 4 contre 4 + 2 jokers", "Deux touches maximum"] },
+      { name: "Retour au calme", min: 3, demo: ["jog","quad","hamstring"], cue: "Faire redescendre le cœur.", items: ["Trot léger puis marche", "Étirements doux de 20 à 30 s : mollets, quadriceps, ischios, adducteurs", "Boire"] }],
     tips: ["En début de saison, faire une seule série d'endurance et 1 tour du circuit.", "Laisser au moins 48 h entre cette séance et un match.", "Arrêter un exercice en cas de douleur : ce sont des conseils généraux, pas un avis médical.", "Après une journée au bureau, ne jamais raccourcir l'échauffement.", "Varier les binômes pour le travail Nordic : un joueur tient les chevilles."] },
 ];
 const routineById = id => ROUTINES.find(r => r.id === id);
@@ -1336,6 +1527,7 @@ function routineDetail(r){
     <p class="pnote">${esc(r.sub)}</p>
     <button class="btn primary block" data-act="rtStart" data-id="${r.id}">▶ Démarrer le minuteur guidé</button>
     <div class="rblocks">${r.blocks.map((b, i) => `<div class="rblock"><div class="rhead"><span class="rnum">${i + 1}</span><b>${esc(b.name)}</b><span class="rmin">${b.min}'</span></div>
+      ${b.demo ? `<div class="demos">${b.demo.map(k => demoTile(k)).join("")}</div>` : ""}
       <ul>${b.items.map(x => `<li>${esc(x)}</li>`).join("")}</ul><p class="rcue">${esc(b.cue)}</p></div>`).join("")}</div>
     <div class="label">Astuces</div>
     <ul class="pkeys">${r.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ul>
@@ -1390,6 +1582,7 @@ function runnerView(){
       <div class="rtstep">Bloc ${rt.idx + 1}/${r.blocks.length}</div>
       <div class="rtname">${esc(b.name)}</div>
       <div class="rtclock" id="rtClock">${clock(rtLeft())}</div>
+      ${b.demo ? `<div class="demos run">${b.demo.map(k => demoTile(k, true)).join("")}</div>` : ""}
       <ul class="rtitems">${b.items.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
       <p class="rtcue">${esc(b.cue)}</p>
       ${next ? `<p class="rtnext">Ensuite : <b>${esc(next.name)}</b> (${next.min}')</p>` : `<p class="rtnext">Dernier bloc</p>`}
