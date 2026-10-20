@@ -221,6 +221,33 @@ pre.report{white-space:pre-wrap;background:var(--surface);border-radius:12px;pad
 .flash div{background:var(--warn);color:#241800;font-weight:800;padding:12px 18px;border-radius:14px;font-size:17px;margin-inline:16px;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 @keyframes flash{0%,30%,60%{opacity:1}15%,45%{opacity:.35}85%{opacity:1}100%{opacity:0}}
 
+/* tactics playbook */
+.tabs button{min-width:0}
+.plays{display:flex;flex-direction:column;gap:8px}
+.playcard{display:flex;gap:12px;align-items:center;text-align:left;border:0;background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:8px;width:100%}
+.pthumb{flex:none;width:92px;border-radius:8px;overflow:hidden;line-height:0}
+.pthumb svg{width:100%;height:auto;display:block}
+.pinfo{display:flex;flex-direction:column;gap:3px;min-width:0;align-items:flex-start}
+.pinfo b{font-family:var(--f-display);font-size:19px;font-weight:700;line-height:1.1;text-transform:uppercase;letter-spacing:.01em}
+.pdiag{border-radius:12px;overflow:hidden;line-height:0;max-width:520px;margin-inline:auto;width:100%}
+.pdiag svg{width:100%;height:auto;display:block}
+.pdiag.v-full{max-width:min(100%,58vh)}
+.playsvg .pp,.playsvg .pb{transition:transform .8s cubic-bezier(.4,.1,.2,1)}
+.pctrl{display:flex;align-items:center;gap:8px}
+.pctrl .btn{flex:1}
+.pcount{font-family:var(--f-display);font-weight:700;font-size:18px;min-width:38px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.pstep{margin:0;font-size:16.5px;line-height:1.4;min-height:3em}
+.pkeys{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;line-height:1.4}
+.pnote{margin:0;line-height:1.45}
+.pleg{margin-top:0;font-size:12.5px;gap:10px}
+.sw.drib{background:repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 5px);box-shadow:0 0 0 1px rgba(0,0,0,.2)}
+.dot.opp{display:inline-block;width:10px;height:10px;border-radius:50%;background:#d8443c;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
+.pbig .pbody{gap:10px}
+.pbig .pdiag{border-radius:0;max-width:none}
+.pbig .pdiag.v-full{max-width:min(100%,62vh)}
+.pbig .pstep{font-size:clamp(18px,5vw,24px);color:var(--board-fg)}
+.pbig .pcount{color:var(--board-fg)}
+.pbig .icon-btn{background:var(--board-2);color:var(--board-fg)}
 /* team talk */
 .toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .tool{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:7px 12px;font-weight:600;font-size:13px;display:inline-flex;gap:6px;align-items:center;min-height:36px}
@@ -536,7 +563,7 @@ function render(){
   const m = curMatch();
   app.className = m ? "app" : "app page";
   if (m && window.scrollY) window.scrollTo(0, 0);
-  app.innerHTML = m ? matchView(m) + (ui.present ? presentView(m) : "") : (ui.tab === "matches" ? matchesView() : squadView()) + tabBar();
+  app.innerHTML = m ? matchView(m) + (ui.present ? presentView(m) : "") : (ui.tab === "matches" ? matchesView() : ui.tab === "tactics" ? tacticsView() : squadView()) + (ui.playId && !m && ui.tab === "tactics" ? "" : tabBar()) + (ui.playBig && !m && ui.tab === "tactics" ? playBigView() : "");
   ui.lastKey = m ? dynKey(m) : "";
   sizeArrows();
   const ts = $("#talkSheet"); if (ts && m) ts.innerHTML = talkSheetBody(m);
@@ -544,12 +571,14 @@ function render(){
 }
 window.addEventListener("resize", () => { if (!ui.drag && !ui.drawing) sizeArrows(); });
 const ICON = {
+  board: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="15" r="1.6"/><path d="M7 7l3 3M10 7l-3 3"/><path d="M10 15c3 0 6-2 7-7"/><path d="M14.5 7.5L17 8l.3 2.6"/></svg>',
   pitch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/><circle cx="12" cy="12" r="3"/></svg>',
   squad: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.4 3-5 6-5s5.4 1.6 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14c2.6 0 4.4 1.3 5 4"/></svg>',
 };
 function tabBar(){
   return `<nav class="bar tabs gut">
     <button data-act="tab" data-v="matches" aria-current="${ui.tab === "matches"}">${ICON.pitch}Matchs</button>
+    <button data-act="tab" data-v="tactics" aria-current="${ui.tab === "tactics"}">${ICON.board}Tactiques</button>
     <button data-act="tab" data-v="squad" aria-current="${ui.tab === "squad"}">${ICON.squad}Effectif</button></nav>`;
 }
 const badge = (n, gk, size) => `<span class="badge${gk ? " gk" : ""}"${size ? ` style="--s:${size}px"` : ""}>${esc(n)}</span>`;
@@ -955,6 +984,283 @@ function addPoint(m, text){
   t.points.push(text.slice(0, 90)); commit(m);
 }
 
+// ---------- Tactiques: animated playbook for 7-a-side ----------
+// Coordinates: x 0..1 (left → right), y 0..1 (0 = opponent goal line). Our team attacks upwards.
+// Arrow actions: ["run", role, [x,y]] player runs · ["drib", role, [x,y]] player carries the ball
+//                ["pass", from, role|[x,y]] · ["shot", role, [x,y]]
+const ROLES = { G: "Gardien", DG: "Défenseur gauche", DD: "Défenseur droit", MG: "Milieu gauche", MC: "Milieu central", MD: "Milieu droit", A: "Attaquant" };
+const PLAY_CATS = [["att", "Attaque"], ["cf", "Coups francs"], ["corner", "Corners"], ["touche", "Touches"], ["def", "Défense"]];
+const PLAYS = [
+  { id: "une-deux", cat: "att", title: "Une-deux dans l'axe", sub: "Passe, remise en une touche, appel dans le dos.", view: "att",
+    p: { A: [.5, .25], MC: [.5, .45], MG: [.2, .38], MD: [.8, .38], DG: [.32, .57], DD: [.68, .57] }, opp: [[.38, .19], [.66, .21], [.47, .36], [.5, .05]], ball: "MC",
+    steps: [
+      { t: "A vient au contact, MC lui joue dans les pieds.", a: [["run", "A", [.5, .31]], ["pass", "MC", "A"]] },
+      { t: "MC part aussitôt dans le dos, A remet en une touche dans sa course.", a: [["run", "MC", [.58, .17]], ["pass", "A", "MC"]] },
+      { t: "MC frappe en première intention.", a: [["shot", "MC", [.44, .03]]] }],
+    keys: ["Passe appuyée dans le pied d'appui de A.", "Remise en UNE touche, devant le joueur, pas dans ses pieds.", "Partir juste après la passe : c'est la vitesse qui crée l'espace."],
+    drill: "Carré de 15 × 15 m : 2 contre 1 vers un mini-but. 6 répétitions par joueur, puis rendre le défenseur actif. 10 min." },
+  { id: "dedoublement", cat: "att", title: "Dédoublement sur le côté", sub: "Le défenseur passe à l'extérieur, centre en retrait.", view: "att",
+    p: { MD: [.8, .4], DD: [.68, .56], A: [.5, .22], MC: [.5, .42], MG: [.2, .35], DG: [.32, .57] }, opp: [[.8, .3], [.55, .18], [.4, .2], [.5, .05]], ball: "MD",
+    steps: [
+      { t: "MD rentre vers l'intérieur et attire son défenseur, DD monte à l'extérieur.", a: [["drib", "MD", [.72, .33]], ["run", "DD", [.9, .24]]] },
+      { t: "MD lance DD dans la course le long de la ligne.", a: [["pass", "MD", "DD"]] },
+      { t: "A attaque le premier poteau, MC arrive au point de penalty : centre en retrait.", a: [["run", "A", [.42, .09]], ["run", "MC", [.5, .15]], ["pass", "DD", "MC"]] },
+      { t: "MC conclut.", a: [["shot", "MC", [.56, .03]]] }],
+    keys: ["Le porteur doit rentrer pour libérer le couloir.", "Le centre en retrait (à ras de terre) est plus efficace que le centre aérien à 7.", "Toujours un joueur au premier poteau, un au point de penalty."],
+    drill: "Couloir de 15 m : 2 contre 1 sur le côté + centre ; 2 attaquants contre 1 défenseur dans la surface. Alterner gauche/droite. 12 min." },
+  { id: "troisieme-homme", cat: "att", title: "Le troisième homme", sub: "Jeu dos au but, remise, passe dans la profondeur.", view: "att",
+    p: { DG: [.3, .57], A: [.5, .3], MC: [.5, .46], MG: [.2, .4], MD: [.8, .4], DD: [.7, .57] }, opp: [[.5, .25], [.35, .2], [.65, .2], [.5, .05]], ball: "DG",
+    steps: [
+      { t: "DG joue dans les pieds de A, dos au but.", a: [["pass", "DG", "A"]] },
+      { t: "A remet à MC qui monte (deuxième homme).", a: [["run", "MC", [.5, .38]], ["pass", "A", "MC"]] },
+      { t: "MG plonge dans le dos de la défense (troisième homme), MC le lance.", a: [["run", "MG", [.32, .12]], ["pass", "MC", "MG"]] },
+      { t: "MG frappe ou centre.", a: [["shot", "MG", [.45, .03]]] }],
+    keys: ["Le troisième homme part quand A reçoit, pas avant (hors-jeu).", "A protège le ballon avec le corps et remet en une touche.", "La passe finale se joue dans l'espace, devant MG."],
+    drill: "Losange de 20 m : passe à l'attaquant, remise, passe en profondeur au 3e joueur qui finit sur but. 10 répétitions de chaque côté." },
+  { id: "appel-croise", cat: "att", title: "Décrochage et appel croisé", sub: "L'attaquant libère l'espace, un milieu s'y engouffre.", view: "att",
+    p: { A: [.5, .2], MG: [.2, .38], MC: [.5, .48], MD: [.8, .38], DG: [.32, .57], DD: [.68, .57] }, opp: [[.42, .17], [.58, .17], [.5, .35], [.5, .05]], ball: "MC",
+    steps: [
+      { t: "A décroche vers le ballon et emmène son défenseur.", a: [["run", "A", [.48, .36]]] },
+      { t: "MD coupe en diagonale dans l'espace libéré, MC le sert en profondeur.", a: [["run", "MD", [.57, .13]], ["pass", "MC", "MD"]] },
+      { t: "MD frappe.", a: [["shot", "MD", [.44, .03]]] }],
+    keys: ["L'appel de A doit être franc et rapide pour attirer le défenseur.", "MD part en diagonale (de l'extérieur vers l'axe).", "Si le défenseur ne suit pas A, MC joue directement A."],
+    drill: "3 contre 2 + gardien sur 30 m : imposer un décrochage de l'attaquant avant chaque frappe. 10 min." },
+  { id: "renversement", cat: "att", title: "Renversement rapide", sub: "Attirer d'un côté, finir de l'autre.", view: "att",
+    p: { MG: [.15, .35], MC: [.45, .44], MD: [.85, .42], A: [.5, .2], DG: [.3, .56], DD: [.7, .57] }, opp: [[.2, .27], [.3, .33], [.4, .22], [.56, .18], [.5, .05]], ball: "MG",
+    steps: [
+      { t: "MG conduit côté gauche : l'adversaire se resserre sur lui.", a: [["drib", "MG", [.18, .3]]] },
+      { t: "MG ressort le ballon sur MC.", a: [["pass", "MG", "MC"]] },
+      { t: "MC renverse vers MD, seul à droite.", a: [["run", "MD", [.85, .3]], ["pass", "MC", "MD"]] },
+      { t: "MD avance et sert A au second poteau.", a: [["drib", "MD", [.8, .16]], ["run", "A", [.6, .1]], ["pass", "MD", "A"]] },
+      { t: "A conclut.", a: [["shot", "A", [.55, .03]]] }],
+    keys: ["Deux passes maximum pour changer de côté.", "Le joueur du côté opposé reste large, collé à la ligne.", "Le renversement se joue au sol, fort et précis."],
+    drill: "Terrain de 35 × 25 m avec 2 couloirs latéraux : un but n'est valable qu'après un changement de côté. 4 contre 4. 12 min." },
+  { id: "contre-attaque", cat: "att", title: "Contre-attaque à 3", sub: "Trois couloirs, finir en moins de 10 secondes.", view: "full",
+    p: { MC: [.5, .62], MG: [.22, .57], MD: [.78, .57], A: [.5, .5], DG: [.35, .76], DD: [.65, .76], G: [.5, .92] }, opp: [[.4, .38], [.62, .36], [.5, .04]], ball: "MC",
+    steps: [
+      { t: "Récupération : MC conduit plein axe, A part en profondeur.", a: [["drib", "MC", [.5, .43]], ["run", "A", [.55, .2]]] },
+      { t: "MG et MD courent en éventail pour écarter les défenseurs.", a: [["run", "MG", [.18, .22]], ["run", "MD", [.82, .22]]] },
+      { t: "MC lance MD dans le dos.", a: [["pass", "MC", "MD"]] },
+      { t: "MG plonge au second poteau, MD centre en retrait.", a: [["run", "MG", [.4, .1]], ["pass", "MD", "MG"]] },
+      { t: "MG conclut.", a: [["shot", "MG", [.5, .03]]] }],
+    keys: ["Le porteur fonce au centre, les deux autres prennent les côtés.", "Fixer un défenseur avant de passer.", "Les défenseurs (DG, DD) restent derrière en cas de perte."],
+    drill: "3 contre 2 sur demi-terrain, départ au signal depuis la ligne médiane : 10 secondes pour frapper. Rotation des rôles. 10 min." },
+
+  { id: "cf-ecran", cat: "cf", title: "Coup franc direct avec écran", sub: "Cacher la frappe au gardien.", view: "att",
+    p: { MC: [.5, .3], A: [.6, .2], MG: [.4, .2], MD: [.7, .3], DG: [.35, .46], DD: [.65, .46] }, opp: [[.45, .21], [.5, .21], [.55, .21], [.52, .04]], ball: [.5, .27],
+    taker: { foot: null, why: "le meilleur frappeur" },
+    steps: [
+      { t: "A et MG se collent au bout du mur adverse pour cacher le ballon au gardien.", a: [] },
+      { t: "Au moment de la frappe, ils s'écartent : le ballon passe dans le trou.", a: [["run", "A", [.66, .14]], ["run", "MG", [.34, .14]], ["shot", "MC", [.44, .03]]] },
+      { t: "MD et A suivent pour le rebond du gardien.", a: [["run", "MD", [.6, .08]], ["run", "A", [.55, .07]]] }],
+    keys: ["Frappe cadrée avant tout : le rebond est souvent dangereux.", "Les joueurs de l'écran s'écartent au tout dernier moment.", "Toujours deux joueurs prêts à suivre."],
+    drill: "Série de 5 coups francs par tireur, à 18–22 m, avec 2 mannequins (ou piquets) en mur et 2 joueurs en écran. 10 min." },
+  { id: "cf-feinte", cat: "cf", title: "Coup franc décalé (feinte)", sub: "Un passe au-dessus, l'autre décale.", view: "att",
+    p: { MG: [.45, .3], MC: [.55, .3], MD: [.74, .29], A: [.5, .16], DG: [.35, .46], DD: [.65, .46] }, opp: [[.45, .21], [.5, .21], [.55, .21], [.66, .17], [.5, .04]], ball: [.5, .27],
+    taker: { foot: null, why: "un frappeur puissant pour la frappe de MD" },
+    steps: [
+      { t: "MG s'élance et passe au-dessus du ballon (feinte de frappe).", a: [["run", "MG", [.42, .18]]] },
+      { t: "MC décale court pour MD qui arrive lancé.", a: [["run", "MD", [.66, .26]], ["pass", "MC", "MD"]] },
+      { t: "MD frappe côté opposé au gardien, A suit le rebond.", a: [["shot", "MD", [.42, .03]], ["run", "A", [.48, .07]]] }],
+    keys: ["La feinte doit être crédible : vraie course d'élan.", "Décalage court (2–3 m), MD frappe sans contrôle.", "Le mur adverse bouge souvent sur la feinte : en profiter."],
+    drill: "Répéter la combinaison à vide 5 fois, puis contre un mur de 3 joueurs actifs qui ont le droit de sortir. 8 min." },
+  { id: "cf-lateral", cat: "cf", title: "Coup franc latéral au second poteau", sub: "Un leurre au premier poteau, la frappe au second.", view: "att",
+    p: { MD: [.88, .22], A: [.55, .2], DD: [.62, .25], MC: [.45, .25], MG: [.33, .3], DG: [.4, .5] }, opp: [[.55, .12], [.45, .1], [.62, .09], [.5, .04]], ball: [.86, .21],
+    taker: { foot: "G", why: "pied gauche depuis la droite = ballon rentrant vers le but" },
+    steps: [
+      { t: "A attaque le premier poteau et emmène son défenseur (leurre).", a: [["run", "A", [.63, .07]]] },
+      { t: "Centre au second poteau pour DD qui arrive lancé.", a: [["run", "DD", [.38, .09]], ["pass", "MD", "DD"]] },
+      { t: "DD reprend, MC suit au point de penalty, MG reste à 18 m.", a: [["shot", "DD", [.47, .03]], ["run", "MC", [.5, .12]]] }],
+    keys: ["Les courses partent au moment où le tireur lève le bras.", "Un joueur reste à l'entrée de la surface pour le second ballon.", "DG reste derrière contre la contre-attaque."],
+    drill: "Centres de coups francs latéraux : 3 attaquants contre 2 défenseurs + gardien, 8 ballons de chaque côté. 12 min." },
+
+  { id: "corner-court", cat: "corner", title: "Corner joué court", sub: "Changer l'angle avant de centrer.", view: "att",
+    p: { MD: [.955, .035], MC: [.75, .16], A: [.6, .14], DD: [.45, .16], MG: [.35, .24], DG: [.45, .5] }, opp: [[.6, .07], [.45, .08], [.55, .12], [.5, .035], [.82, .12]], ball: [.95, .04],
+    taker: { foot: null, why: "un bon passeur" },
+    steps: [
+      { t: "MC vient près du tireur.", a: [["run", "MC", [.86, .07]]] },
+      { t: "MD joue court sur MC.", a: [["pass", "MD", "MC"]] },
+      { t: "MD rentre sur le terrain, MC lui remet en une touche.", a: [["run", "MD", [.82, .13]], ["pass", "MC", "MD"]] },
+      { t: "MD centre au point de penalty où arrive A.", a: [["run", "A", [.52, .11]], ["pass", "MD", "A"]] },
+      { t: "A conclut.", a: [["shot", "A", [.45, .03]]] }],
+    keys: ["Surprise : la défense est placée pour un centre direct.", "Attention au hors-jeu après la remise.", "Si un défenseur sort sur le corner court, centrer directement."],
+    drill: "Corners courts à 2 contre 1 près du drapeau + 3 attaquants contre 2 défenseurs dans la surface. 8 corners par côté." },
+  { id: "corner-premier-poteau", cat: "corner", title: "Corner rentrant au premier poteau", sub: "Déviation vers le second poteau.", view: "att",
+    p: { MD: [.955, .035], A: [.6, .15], DD: [.42, .16], MC: [.5, .2], MG: [.48, .27], DG: [.4, .5] }, opp: [[.58, .08], [.46, .08], [.52, .13], [.5, .035]], ball: [.95, .04],
+    taker: { foot: "G", why: "pied gauche depuis la droite (ou pied droit depuis la gauche) = ballon rentrant" },
+    steps: [
+      { t: "A attaque le premier poteau, DD le second.", a: [["run", "A", [.63, .05]], ["run", "DD", [.38, .06]]] },
+      { t: "Ballon rentrant, tendu, au premier poteau : A dévie de la tête.", a: [["pass", "MD", "A"]] },
+      { t: "La déviation arrive au second poteau pour DD. MG reste à 18 m pour le rebond.", a: [["pass", "A", "DD"], ["shot", "DD", [.45, .03]]] }],
+    keys: ["Le ballon doit être tendu, entre le gardien et le premier poteau.", "A dévie, il ne cherche pas à cadrer.", "Toujours un joueur à 18 m et un défenseur derrière."],
+    drill: "Le tireur répète 10 corners rentrants sur une zone marquée au premier poteau, puis ajouter les courses et 2 défenseurs. 12 min." },
+  { id: "corner-retrait", cat: "corner", title: "Corner en retrait à 18 m", sub: "Ballon au sol pour une frappe lointaine.", view: "att",
+    p: { MG: [.045, .035], MC: [.36, .3], A: [.5, .08], MD: [.6, .14], DD: [.52, .17], DG: [.6, .5] }, opp: [[.4, .07], [.47, .1], [.56, .1], [.5, .035]], ball: [.05, .04],
+    taker: { foot: null, why: "une passe précise au sol" },
+    steps: [
+      { t: "A se place devant le gardien (écran), MD et DD attirent les défenseurs au premier poteau.", a: [["run", "MD", [.4, .07]], ["run", "DD", [.45, .09]]] },
+      { t: "Passe à ras de terre en retrait vers MC à l'entrée de surface.", a: [["run", "MC", [.38, .2]], ["pass", "MG", "MC"]] },
+      { t: "MC frappe en première intention.", a: [["shot", "MC", [.56, .03]]] }],
+    keys: ["MC part tard pour ne pas être suivi.", "Frappe sans contrôle, cadrée, à ras de terre.", "Les autres joueurs suivent pour le rebond."],
+    drill: "Frappes en première intention depuis l'entrée de surface sur passe venant du côté : 10 frappes par joueur." },
+
+  { id: "touche-remise", cat: "touche", title: "Touche remise et débordement", sub: "Recevoir, remettre, repartir le long de la ligne.", view: "att",
+    p: { MD: [.97, .32], A: [.75, .22], MC: [.7, .38], DD: [.8, .48], MG: [.3, .35], DG: [.35, .55] }, opp: [[.85, .26], [.78, .33], [.6, .18], [.5, .05]], ball: [.97, .32],
+    steps: [
+      { t: "A vient vers le lanceur et reçoit dans les pieds.", a: [["run", "A", [.88, .28]], ["pass", "MD", "A"]] },
+      { t: "MD entre sur le terrain, A lui remet en une touche.", a: [["run", "MD", [.9, .22]], ["pass", "A", "MD"]] },
+      { t: "MD file le long de la ligne et centre pour MC.", a: [["drib", "MD", [.9, .1]], ["run", "MC", [.5, .12]], ["pass", "MD", "MC"]] },
+      { t: "MC conclut.", a: [["shot", "MC", [.5, .03]]] }],
+    keys: ["Lancer vite, avant que l'adversaire soit placé.", "Lancer dans les pieds, pas à la tête.", "Le lanceur rentre IMMÉDIATEMENT sur le terrain."],
+    drill: "Touches à 2 contre 1 le long de la ligne, objectif : centrer dans les 5 secondes. 6 touches par joueur." },
+  { id: "touche-contre-appel", cat: "touche", title: "Touche appel – contre-appel", sub: "Faire venir, puis partir dans le dos.", view: "att",
+    p: { MD: [.97, .42], MC: [.8, .36], A: [.55, .2], DD: [.75, .52], MG: [.3, .35], DG: [.35, .56] }, opp: [[.78, .33], [.6, .24], [.5, .05]], ball: [.97, .42],
+    steps: [
+      { t: "MC fait un appel court vers le lanceur pour attirer son défenseur.", a: [["run", "MC", [.86, .39]]] },
+      { t: "Puis il repart en profondeur le long de la ligne : MD lance dans sa course.", a: [["run", "MC", [.89, .2]], ["pass", "MD", "MC"]] },
+      { t: "MC centre pour A qui attaque le but.", a: [["run", "A", [.5, .1]], ["pass", "MC", "A"]] },
+      { t: "A conclut.", a: [["shot", "A", [.45, .03]]] }],
+    keys: ["Le changement de rythme fait la différence.", "Près de notre but : lancer vers l'avant le long de la ligne, jamais au centre.", "Un 2e joueur reste disponible court en solution de secours."],
+    drill: "Par 3 : lanceur, receveur, défenseur. Le receveur doit se démarquer par appel – contre-appel. 3 min par rôle." },
+
+  { id: "def-corner", cat: "def", title: "Défendre un corner", sub: "Poteaux, zone et un joueur pour la contre-attaque.", view: "own",
+    p: { G: [.5, .955], DD: [.62, .955], DG: [.38, .955], MC: [.5, .86], MG: [.4, .885], MD: [.66, .8], A: [.6, .58] }, opp: [[.955, .965], [.57, .89], [.44, .845], [.52, .785], [.34, .905]], ball: [.95, .96],
+    steps: [
+      { t: "Placement : DD au premier poteau, DG au second, MC au point de penalty, MG marque leur meilleur joueur de tête, A reste haut.", a: [] },
+      { t: "Le gardien sort sur tous les ballons dans les 6 mètres en criant « Gardien ! ».", a: [["run", "G", [.56, .915]], ["pass", [.95, .96], [.56, .915]]] },
+      { t: "Le gardien relance vite sur MD, qui lance A en contre.", a: [["pass", "G", "MD"], ["run", "A", [.66, .47]], ["pass", "MD", "A"]] }],
+    keys: ["Les poteaux ne bougent pas tant que le ballon n'est pas dégagé.", "Toujours dégager loin et sur les côtés, jamais dans l'axe.", "Un joueur haut oblige l'adversaire à laisser un défenseur."],
+    drill: "Corners contre : 4 attaquants contre 4 défenseurs + gardien. 10 corners, puis l'équipe qui défend doit marquer en contre en moins de 10 secondes." },
+];
+
+function simulate(pl){
+  const pos = {}; for (const [k, v] of Object.entries(pl.p)) pos[k] = [...v];
+  let ball = typeof pl.ball === "string" ? [...pos[pl.ball]] : [...pl.ball];
+  const frames = [{ pos: JSON.parse(JSON.stringify(pos)), ball: [...ball], arrows: [] }];
+  const pt = v => typeof v === "string" ? pos[v] : v;
+  for (const st of pl.steps) {
+    const arrows = [];
+    for (const a of st.a) if (a[0] === "run" || a[0] === "drib") {
+      const from = [...pos[a[1]]]; pos[a[1]] = [...a[2]]; arrows.push({ k: a[0], f: from, to: [...a[2]] });
+      if (a[0] === "drib") ball = [...a[2]];
+    }
+    for (const a of st.a) if (a[0] === "pass" || a[0] === "shot") {
+      const from = [...pt(a[1])], to = [...pt(a[2])]; arrows.push({ k: a[0], f: from, to }); ball = [...to];
+    }
+    frames.push({ pos: JSON.parse(JSON.stringify(pos)), ball: [...ball], arrows });
+  }
+  return frames;
+}
+const VIEWS = { full: [0, 0, 70, 100], att: [0, 0, 70, 60], own: [0, 40, 70, 60] };
+const ASTYLE = { run: ["#ffffff", "", .55], drib: ["#ffffff", ".2 1.1", .7], pass: ["#ffd34d", "1.6 1.1", .55], shot: ["#ff6b62", "", .8] };
+function playSVG(pl, step, opts = {}){
+  const fr = simulate(pl), cur = fr[Math.min(step, fr.length - 1)];
+  const [vx, vy, vw, vh] = VIEWS[pl.view] || VIEWS.full;
+  const X = v => (v * 70).toFixed(2), Y = v => (v * 100).toFixed(2);
+  const lines = `<g fill="none" stroke="rgba(255,255,255,.85)" stroke-width=".35">
+    <rect x="3" y="3" width="64" height="94"/><line x1="3" y1="50" x2="67" y2="50"/><circle cx="35" cy="50" r="7"/>
+    <rect x="16" y="3" width="38" height="14"/><rect x="16" y="83" width="38" height="14"/>
+    <rect x="26" y="3" width="18" height="5"/><rect x="26" y="92" width="18" height="5"/>
+    <rect x="29.5" y="1.2" width="11" height="1.8"/><rect x="29.5" y="97" width="11" height="1.8"/>
+    <path d="M28 17 A7 7 0 0 0 42 17"/><path d="M28 83 A7 7 0 0 1 42 83"/></g>
+    <g fill="rgba(255,255,255,.85)"><circle cx="35" cy="11" r=".45"/><circle cx="35" cy="89" r=".45"/><circle cx="35" cy="50" r=".45"/></g>`;
+  const stripes = Array.from({ length: 10 }, (_, i) => `<rect x="0" y="${i * 10}" width="70" height="10" fill="${i % 2 ? "#258039" : "#2b8c43"}"/>`).join("");
+  const markers = Object.entries(ASTYLE).map(([k, [c]]) => `<marker id="pm-${k}${opts.uid || ""}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="${k === "shot" ? 3.4 : 4.2}" markerHeight="${k === "shot" ? 3.4 : 4.2}" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`).join("");
+  const arrowsFor = (f, dim, n) => f.arrows.map((a, i) => {
+    const [c, dash, w] = ASTYLE[a.k];
+    const x1 = X(a.f[0]), y1 = Y(a.f[1]), x2 = X(a.to[0]), y2 = Y(a.to[1]);
+    const badge = !opts.thumb && i === 0 ? `<g opacity="${dim ? .45 : 1}"><circle cx="${x1}" cy="${(a.f[1] * 100 - 4.2).toFixed(2)}" r="1.7" fill="#101b25" stroke="#ffd34d" stroke-width=".3"/><text x="${x1}" y="${(a.f[1] * 100 - 3.55).toFixed(2)}" font-size="2" font-weight="800" text-anchor="middle" fill="#ffd34d" font-family="Barlow Condensed, sans-serif">${n}</text></g>` : "";
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"${dash ? ` stroke-dasharray="${dash}"` : ""} marker-end="url(#pm-${a.k}${opts.uid || ""})" opacity="${dim ? .3 : 1}"/>${badge}`;
+  }).join("");
+  const arrows = fr.slice(1, step + 1).map((f, i) => arrowsFor(f, i + 1 < step, i + 1)).join("");
+  const opp = pl.opp.map(([x, y]) => `<circle cx="${X(x)}" cy="${Y(y)}" r="1.9" fill="#d8443c" stroke="#fff" stroke-width=".35"/>`).join("");
+  const players = Object.entries(cur.pos).map(([r, [x, y]]) => `<g class="pp" data-r="${r}" style="transform:translate(${X(x)}px,${Y(y)}px)">
+      <circle r="2.6" fill="${r === "G" ? "#f2c94c" : "#2456c4"}" stroke="#fff" stroke-width=".4"/>
+      <text y=".85" font-size="${r.length > 1 ? 2.1 : 2.6}" font-weight="800" text-anchor="middle" fill="${r === "G" ? "#1b1500" : "#fff"}" font-family="Barlow Condensed, sans-serif">${r}</text></g>`).join("");
+  const ball = `<g class="pb" style="transform:translate(${X(cur.ball[0])}px,${Y(cur.ball[1])}px)"><circle r="1.05" fill="#fff" stroke="#111" stroke-width=".3"/></g>`;
+  return `<svg class="playsvg${opts.thumb ? " thumb" : ""}" viewBox="${vx} ${vy} ${vw} ${vh}" role="img" aria-label="${esc(pl.title)}"><defs>${markers}</defs>${stripes}${lines}<g class="arr">${arrows}</g>${opp}${players}${ball}</svg>`;
+}
+const playById = id => PLAYS.find(p => p.id === id);
+function takerHint(pl){
+  if (!pl.taker) return "";
+  const fits = S.players.filter(p => !p.gk && ["M", "A", ""].includes(p.pos || "") && (!pl.taker.foot || p.foot === pl.taker.foot || p.foot === "2"));
+  return `<div class="label">Tireur conseillé</div><p class="pnote">${esc(pl.taker.why[0].toUpperCase() + pl.taker.why.slice(1))}.${fits.length ? ` Dans votre effectif : <b>${fits.slice(0, 3).map(p => esc(p.name)).join(", ")}</b>.` : ""}</p>`;
+}
+function tacticsView(){
+  const pl = ui.playId && playById(ui.playId);
+  if (pl) return playDetail(pl);
+  const cat = ui.playCat || "all";
+  const list = PLAYS.filter(p => cat === "all" || p.cat === cat);
+  return `<header class="top gut"><h1>Tactiques</h1></header>
+  <main class="scroll gut"><div class="stack">
+    <div class="chips">${[["all", "Tout"], ...PLAY_CATS].map(([k, l]) => `<button class="chipbtn" data-act="playCat" data-v="${k}" aria-pressed="${cat === k}">${l}</button>`).join("")}</div>
+    ${PLAY_CATS.filter(([k]) => cat === "all" || cat === k).map(([k, l]) => `
+      <div class="label">${l}</div>
+      <div class="plays">${list.filter(p => p.cat === k).map(p => `<button class="playcard" data-act="openPlay" data-id="${p.id}">
+        <span class="pthumb v-${p.view}">${playSVG(p, p.steps.length, { thumb: true, uid: "t" + p.id })}</span>
+        <span class="pinfo"><b>${esc(p.title)}</b><span class="note">${esc(p.sub)}</span><span class="pill">${p.steps.length} étapes</span></span></button>`).join("")}</div>`).join("")}
+    <p class="note">Les rôles suivent le système 2-3-1 : G, DG, DD, MG, MC, MD, A. Adaptez-les à vos joueurs.</p>
+  </div></main>`;
+}
+function playDetail(pl){
+  const step = ui.playStep || 0, n = pl.steps.length;
+  const used = Object.keys(pl.p);
+  return `<header class="top gut"><button class="icon-btn" data-act="closePlay" aria-label="Retour aux tactiques">‹</button>
+    <div style="flex:1;min-width:0"><div style="font-weight:700">${esc(pl.title)}</div><div class="sub">${esc((PLAY_CATS.find(c => c[0] === pl.cat) || [])[1] || "")}</div></div>
+    <button class="btn" data-act="playBig">Plein écran</button></header>
+  <main class="scroll gut"><div class="stack">
+    <div class="pdiag v-${pl.view}" id="pdiag">${playSVG(pl, step, { uid: "d" })}</div>
+    <div class="pctrl-wrap">${playControls(pl, step)}</div>
+    <div class="legend pleg"><span><i class="sw run"></i>Course</span><span><i class="sw drib"></i>Conduite</span><span><i class="sw pass"></i>Passe</span><span><i class="sw press"></i>Frappe</span><span><i class="dot opp"></i>Adversaire</span></div>
+    <div class="label">Points clés</div>
+    <ul class="pkeys">${pl.keys.map(k => `<li>${esc(k)}</li>`).join("")}</ul>
+    <div class="label">À l'entraînement</div><p class="pnote">${esc(pl.drill)}</p>
+    ${takerHint(pl)}
+    <div class="label">Rôles</div><p class="pnote">${used.map(r => `<b>${r}</b> ${ROLES[r].toLowerCase()}`).join(" · ")}</p>
+  </div></main>`;
+}
+function playControls(pl, step){
+  const n = pl.steps.length;
+  const text = step === 0 ? "Mise en place : touchez ▶ pour voir l'action étape par étape." : pl.steps[step - 1].t;
+  return `<div class="pctrl"><button class="icon-btn" data-act="stepPrev" aria-label="Étape précédente"${step === 0 ? " disabled" : ""}>◀</button>
+      <button class="btn primary" data-act="stepPlay">${ui.playTimer ? "❚❚ Pause" : step >= n ? "↺ Revoir" : "▶ Lecture"}</button>
+      <button class="icon-btn" data-act="stepNext" aria-label="Étape suivante"${step >= n ? " disabled" : ""}>▶</button>
+      <span class="pcount">${step}/${n}</span></div>
+    <p class="pstep" id="pstep">${step ? `<b>${step}.</b> ` : ""}${esc(text)}</p>`;
+}
+// Move players and ball smoothly to the new step instead of re-rendering everything.
+function playGo(step){
+  const pl = playById(ui.playId); if (!pl) return;
+  const n = pl.steps.length; step = Math.max(0, Math.min(n, step)); ui.playStep = step;
+  document.querySelectorAll(".pdiag").forEach(box => {
+    const svg = box.querySelector("svg"); if (!svg) return;
+    const tmp = document.createElement("div"); tmp.innerHTML = playSVG(pl, step, { uid: box.dataset.uid || "d" });
+    const fresh = tmp.firstElementChild;
+    svg.querySelector(".arr").innerHTML = fresh.querySelector(".arr").innerHTML;
+    fresh.querySelectorAll(".pp").forEach(g => { const el = svg.querySelector(`.pp[data-r="${g.dataset.r}"]`); if (el) el.style.transform = g.style.transform; });
+    svg.querySelector(".pb").style.transform = fresh.querySelector(".pb").style.transform;
+  });
+  document.querySelectorAll(".pctrl-wrap").forEach(w => { w.innerHTML = playControls(pl, step); });
+}
+function playToggle(){
+  const pl = playById(ui.playId); if (!pl) return;
+  if (ui.playTimer) { clearInterval(ui.playTimer); ui.playTimer = null; playGo(ui.playStep); return; }
+  if (ui.playStep >= pl.steps.length) ui.playStep = 0;
+  const tick = () => {
+    const next = ui.playStep + 1;
+    if (next >= pl.steps.length) { clearInterval(ui.playTimer); ui.playTimer = null; }
+    playGo(next);
+  };
+  ui.playTimer = setInterval(tick, 2000);
+  tick();
+}
+function playBigView(){
+  const pl = playById(ui.playId); if (!pl) return "";
+  return `<div class="present pbig" role="dialog" aria-label="${esc(pl.title)}"><div class="ph gut"><div class="sc">${esc(pl.title)}</div><button class="btn close" data-act="playBigClose">✕ Fermer</button></div>
+    <div class="pbody"><div class="pdiag big v-${pl.view}" data-uid="b">${playSVG(pl, ui.playStep || 0, { uid: "b" })}</div>
+    <div class="gut pctrl-wrap">${playControls(pl, ui.playStep || 0)}</div></div></div>`;
+}
+
 // ---------- live tick ----------
 function dynKey(m){ const t = Date.now(); const sg = suggestion(m, t);
   return m.slots.filter(s => isTired(m, s, t)).map(s => s.id).join() + "|" + (sg ? sg.out.id + sg.inn.id : "") + "|" + (bannerOn(m) ? 1 : 0) + "|" + (ui.mtab === "pitch" ? liveTips(m).map(x => x.key).join() : ""); }
@@ -1238,7 +1544,15 @@ document.addEventListener("click", e => {
   const m = curMatch(); const a = b.dataset.act;
   if (b.closest("#tipsList") && a !== "hideTip") closeSheet();
   switch (a) {
-    case "tab": ui.tab = b.dataset.v || "squad"; ui.manage = false; render(); break;
+    case "tab": ui.tab = b.dataset.v || "squad"; ui.manage = false; ui.playId = null; ui.playBig = false; if (ui.playTimer) { clearInterval(ui.playTimer); ui.playTimer = null; } render(); window.scrollTo(0, 0); break;
+    case "playCat": ui.playCat = b.dataset.v; render(); break;
+    case "openPlay": ui.playId = b.dataset.id; ui.playStep = 0; render(); window.scrollTo(0, 0); break;
+    case "closePlay": if (ui.playTimer) { clearInterval(ui.playTimer); ui.playTimer = null; } ui.playId = null; ui.playBig = false; render(); break;
+    case "stepPrev": if (ui.playTimer) { clearInterval(ui.playTimer); ui.playTimer = null; } playGo((ui.playStep || 0) - 1); break;
+    case "stepNext": if (ui.playTimer) { clearInterval(ui.playTimer); ui.playTimer = null; } playGo((ui.playStep || 0) + 1); break;
+    case "stepPlay": playToggle(); break;
+    case "playBig": ui.playBig = true; render(); keepAwake(); break;
+    case "playBigClose": ui.playBig = false; render(); break;
     case "newMatch": newMatchSheet(); break;
     case "open": openMatch(b.dataset.id); break;
     case "back": ui.matchId = null; ui.selected = null; ui.present = false; render(); NATIVE() && NATIVE().keepAwake(false); break;
